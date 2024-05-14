@@ -12,7 +12,7 @@ opt-level = "s"
 [dependencies]
 ohkami                   = { git = "https://github.com/kana-rus/ohkami.git", features = ["rt_worker"] }
 worker                   = { version = "0.2.0" }
-yew                      = { version = "0.21", features = ["ssr"] }
+yew                      = { version = "0.21", features = ["csr"] }
 web-sys                  = { version = "0.3",  features = ["Crypto"] }
 thiserror                = { version = "1.0" }
 console_error_panic_hook = { version = "0.1.7" }
