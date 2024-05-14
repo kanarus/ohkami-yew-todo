@@ -29,9 +29,9 @@ async fn my_worker() -> Ohkami {
 
     Ohkami::new((
         "/signin".GET(signin),
-        "/api".By(Ohkami::with(jwt(),
-            "/".GET(index)
-        )),
+        "/api".By(Ohkami::with(jwt(), (
+            "/".GET(index),
+        ))),
     ))
 }
 
