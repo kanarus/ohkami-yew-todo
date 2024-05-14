@@ -9,5 +9,6 @@ build/
 /dist
 
 # wrangler files
+wrangler.toml
 .wrangler
 .dev.vars
