@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS todos (
 );
 
 CREATE TABLE IF NOT EXISTS tags (
-    id    INTEGER NOT NULL, -- like autoincremented (https://www.sqlite.org/autoinc.html)
-    label TEXT    NOT NULL,
+    id   INTEGER NOT NULL, -- like autoincremented (https://www.sqlite.org/autoinc.html)
+    name TEXT    NOT NULL,
 
     PRIMARY KEY (id)
 );
