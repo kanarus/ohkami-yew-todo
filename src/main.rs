@@ -1,3 +1,6 @@
+mod ui;
+mod models;
+
 use yew::prelude::*;
 
 

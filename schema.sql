@@ -1,11 +1,9 @@
 -- Cloudflare D1; SQLite3
 
 CREATE TABLE IF NOT EXISTS users (
-    id    TEXT NOT NULL, -- uuid v4
-    token TEXT NOT NULL, -- active JWT token
+    id TEXT NOT NULL, -- uuid v4
 
-    PRIMARY KEY (id),
-    UNIQUE (token)
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS todos (

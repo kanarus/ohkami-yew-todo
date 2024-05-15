@@ -17,7 +17,7 @@ impl Bindings {
             tags.push(match __get_id__.bind_refs(&[D1Type::Text(name)])?.first::<i32>(Some("id")).await? {
                 Some(id) => Tag { id: id as _, name: name.to_string() },
                 None => {
-                    __add_tag__.bind_refs(&[D1Type::Text(name)])?;
+                    __add_tag__.bind_refs(&[D1Type::Text(name)])?.run().await?;
                     let id = __get_id__.bind_refs(&[D1Type::Text(name)])?.first::<i32>(Some("id")).await?;
                     Tag { id: id.unwrap() as _, name: name.to_string() }
                 }
