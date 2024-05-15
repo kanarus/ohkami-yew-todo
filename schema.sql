@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS tags (
     id   INTEGER NOT NULL, -- like autoincremented (https://www.sqlite.org/autoinc.html)
     name TEXT    NOT NULL,
 
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (name)
 );
 
 CREATE TABLE IF NOT EXISTS todo_tags (

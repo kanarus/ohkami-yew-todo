@@ -1,6 +1,6 @@
 mod fangs;
 mod models;
-mod utils;
+mod statements;
 
 use fangs::{jwt, JWTPayload};
 use models::{CreateTodo, Tag, Todo};
@@ -37,7 +37,9 @@ async fn my_worker() -> Ohkami {
         /* `dist` is served by `--assets dist` option passed to `dev` script in package.json */
 
         "/api".By(Ohkami::with(jwt(), (
-            "/list".GET(list_todos),
+            "/todos"
+                .GET(list_todos)
+                .POST(create_todo),
         ))),
     ))
 }
@@ -47,14 +49,38 @@ async fn create_todo(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
     req:  CreateTodo<'_>,
-) -> Result<status::Created, ServerError> {
+) -> Result<status::Created<Todo>, ServerError> {
     let user_id = &auth.user_id;
 
+    let id = web_sys::window().unwrap().crypto().unwrap().random_uuid();
+    let tags = b.get_or_create_tags_by_names(&req.tags).await?;
+    
     b.DB.prepare("
-    INSERT INTO todos")
+    INSERT INTO todos (
+        id, user_id, content
+    ) VALUES (
+        ?1, ?2,      ?3
+    )")
+        .bind(&[(&id).into(), user_id.into(), req.content.into()])?
         .run().await?;
 
-    Ok(status::Created(()))
+    b.DB.prepare(format!("
+    INSERT INTO todo_tags (
+        todo_id, tag_id
+    ) VALUES {}",
+    vec!["(?,?)"; tags.len()].join(",")))
+        .bind(&tags.iter()
+            .map(|tag| [(&id).into(), tag.id.into()])
+            .flatten().collect::<Vec<_>>()
+        )?
+        .run().await?;
+
+    Ok(status::Created(Todo {
+        id,
+        tags,
+        content:   req.content.into(),
+        completed: false,
+    }))
 }
 
 #[worker::send]
@@ -66,10 +92,10 @@ async fn list_todos(
 
     let todo_records = {
         #[derive(Deserialize)] struct Record {
-            id:             String,
-            content:        String,
-            completed_at:   Option<u64>,
-            tag_ids_csv:    String,
+            id:            String,
+            content:       String,
+            completed_at:  Option<u64>,
+            tag_ids_csv:   String,
             tag_names_csv: String,
         }
         b.DB.prepare("
