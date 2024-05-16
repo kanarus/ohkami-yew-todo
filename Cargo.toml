@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
+path = "src/server.rs"
 crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "front"
+path = "src/front.rs"
 
 [profile.release]
 opt-level = "s"

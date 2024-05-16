@@ -3,7 +3,7 @@ mod hooks;
 
 use crate::models::{SignupResponse, Todo};
 use client::Client;
-use hooks::use_token;
+use hooks::use_tokenstore;
 use yew::prelude::*;
 use yew::suspense::{use_future, Suspense};
 use std::rc::Rc;
@@ -17,24 +17,27 @@ pub fn App() -> Html {
                 {"Ohkami*Yew TODO Demo"}
             </h1>
             <Suspense>
-                <Gate />
+                <TODODemo />
             </Suspense>
         </>
     }
 }
 
 #[function_component]
-pub fn Gate() -> HtmlResult {
-    let token_store = use_token();
+pub fn TODODemo() -> HtmlResult {
+    let tokenstore = use_tokenstore();
+    let user_token = use_state(|| tokenstore.get());
 
     if let Err(err) = &*use_future(|| {
-        let token_store = token_store.clone();
+        let tokenstore = tokenstore.clone();
+        let user_token = user_token.clone();
 
         async move {
-            if token_store.get().is_none() {
+            if user_token.is_none() {
                 let SignupResponse { token } = Client::new(None)
                     .POST("/signup").await?.json().await?;
-                token_store.set(&token);
+                tokenstore.set(&token);
+                user_token.set(Some(Rc::new(token.into())));
             }
             Result::<(), client::Error>::Ok(())
         }
@@ -43,11 +46,13 @@ pub fn Gate() -> HtmlResult {
     }
 
     Ok(html! {
-        <Suspense>
-            {token_store.as_ref().map(|token| html! {
-                <TodoList {token} />
+        <>
+            {user_token.as_ref().map(|token| html! {
+                <Suspense>
+                    <TodoList {token} />
+                </Suspense>
             })}
-        </Suspense>
+        </>
     })
 }
 
@@ -58,15 +63,16 @@ pub struct TodoListProps {
 
 #[function_component]
 pub fn TodoList(props: &TodoListProps) -> HtmlResult {
-    let todos = use_state(|| vec![]);
+    let todos  = use_state(|| vec![]);
+    let client = Rc::new(Client::new(props.token.clone()));
 
     if let Err(err) = &*use_future(|| {
-        let todos = todos.clone();
-        let token = props.token.clone();
+        let todos  = todos.clone();
+        let client = client.clone();
 
         async move {
-            let fetched_todos: Vec<Todo> = Client::new(token)
-                .GET("/todos").await?.json().await?;
+            let fetched_todos: Vec<Todo> = client
+                .GET("/api/todos").await?.json().await?;
             todos.set(fetched_todos);
             Result::<(), client::Error>::Ok(())
         }
@@ -76,11 +82,16 @@ pub fn TodoList(props: &TodoListProps) -> HtmlResult {
 
     Ok(html! {
         <div>
+            <div>
+                <span>{"Sample Todo"}</span>
+                <span>{&false}</span>
+            </div>
             {for todos.iter().map(|todo| {html! {
                 <div>
-                    <p>{&todo.content}</p>
+                    <span>{&todo.content}</span>
+                    <span>{&todo.completed}</span>
                 </div>
-            }})}  
+            }})}
         </div>
     })
 }

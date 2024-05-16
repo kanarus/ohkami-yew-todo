@@ -1,8 +1,8 @@
-mod server;
+mod api;
 mod models;
 
-use server::{complete_todo, create_todo, list_todos, signup, update_todo};
-use server::jwt;
+use api::{complete_todo, create_todo, list_todos, signup, update_todo};
+use api::jwt;
 use ohkami::prelude::*;
 
 
