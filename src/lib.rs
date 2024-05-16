@@ -5,6 +5,7 @@ use server::{complete_todo, create_todo, list_todos, signup, update_todo};
 use server::jwt;
 use ohkami::prelude::*;
 
+
 #[ohkami::bindings]
 struct Bindings;
 
@@ -13,10 +14,10 @@ async fn my_worker() -> Ohkami {
     console_error_panic_hook::set_once();
 
     Ohkami::new((
-        /* `dist` is served by `--assets dist` option passed to `dev` script in package.json */
+        /* `dist` is served by `--assets dist` of `dev` script in package.json */
 
         "/signup"
-            .GET(signup),
+            .POST(signup),
 
         "/api".By(Ohkami::with(jwt::fang(), (
             "/todos"

@@ -21,12 +21,12 @@ fn validate_tag_names<'name>(tag_names: impl AsRef<[&'name str]>) -> Result<(), 
 }
 
 
-#[Payload(JSON/S)]
+#[Payload(JSON/SD)]
 pub struct SignupResponse {
     pub token: JWTToken,
 }
 
-#[Payload(JSON/S where validate_tag_names(self.tags.iter().map(|tag| &*tag.name).collect::<Vec<_>>()))]
+#[Payload(JSON/SD where validate_tag_names(self.tags.iter().map(|tag| &*tag.name).collect::<Vec<_>>()))]
 pub struct Todo {
     pub id:        String,
     pub content:   String,
@@ -34,19 +34,19 @@ pub struct Todo {
     pub tags:      Vec<Tag>,
 }
 
-#[Payload(JSON/S)]
+#[Payload(JSON/SD)]
 pub struct Tag {
     pub id:   usize,
     pub name: String,
 }
 
-#[Payload(JSON/D where validate_tag_names(&self.tags))]
+#[Payload(JSON/SD where validate_tag_names(&self.tags))]
 pub struct CreateTodo<'req> {
     pub content: &'req str,
     pub tags:    Vec<&'req str>,
 }
 
-#[Payload(JSON/D where validate_tag_names(self.tags.as_deref().unwrap_or_default()))]
+#[Payload(JSON/SD where validate_tag_names(self.tags.as_deref().unwrap_or_default()))]
 pub struct UpdateTodo<'req> {
     pub content: Option<&'req str>,
     pub tags:    Option<Vec<&'req str>>,
