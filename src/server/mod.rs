@@ -35,8 +35,6 @@ pub async fn create_todo(
     auth: Memory<'_, JWTPayload>,
     req:  CreateTodo<'_>,
 ) -> Result<status::Created<Todo>, ServerError> {
-    let user_id = &auth.user_id;
-
     let tags = b.get_or_create_tags_by_names(&req.tags).await?;
 
     let id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
@@ -48,7 +46,7 @@ pub async fn create_todo(
                 id, user_id, content
             ) VALUES (
                 ?1, ?2,      ?3
-            )").bind(&[(&id).into(), user_id.into(), req.content.into()])?
+            )").bind(&[(&id).into(), (&auth.user_id).into(), req.content.into()])?
         ),
         (tags.len() > 0).then(||
             b.DB.prepare(format!("INSERT INTO todo_tags (
@@ -74,9 +72,6 @@ pub async fn list_todos(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
 ) -> Result<Vec<Todo>, ServerError> {
-    let user_id = &auth.user_id;
-    worker::console_log!("user_id = `{}`", user_id);
-
     let todo_records = {
         #[derive(Deserialize)] struct Record {
             id:            String,
@@ -96,7 +91,7 @@ pub async fn list_todos(
         LEFT OUTER JOIN tags      ON tags.id = todo_tags.tag_id
         WHERE user_id = ?1
         GROUP BY todos.id")
-            .bind(&[user_id.into()])?
+            .bind(&[(&auth.user_id).into()])?
             .all().await?.results::<Record>()?
     };
 
@@ -117,16 +112,7 @@ pub async fn update_todo(id: &str,
     auth: Memory<'_, JWTPayload>,
     req:  UpdateTodo<'_>,
 ) -> Result<(), ServerError> {
-    {
-        let user_id  = &auth.user_id;
-        let owner_id = b.DB.prepare("SELECT user_id FROM todos WHERE id = ?")
-            .bind(&[id.into()])?.first::<String>(Some("user_id")).await?;
-
-        (owner_id.as_deref() == Some(user_id)).then_some(())
-            .ok_or_else(|| ServerError::NotOwner {
-                user_id: user_id.to_string(), resource: "todo"
-            })?;
-    }
+    b.assert_user_is_owner_of_todo(&auth.user_id, id).await?;
 
     let UpdateTodo { content, tags } = req;
     let tags = match tags {
@@ -166,16 +152,7 @@ pub async fn complete_todo(id: &str,
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
 ) -> Result<(), ServerError> {
-    {
-        let user_id  = &auth.user_id;
-        let owner_id = b.DB.prepare("SELECT user_id FROM todos WHERE id = ?")
-            .bind(&[id.into()])?.first::<String>(Some("user_id")).await?;
-
-        (owner_id.as_deref() == Some(user_id)).then_some(())
-            .ok_or_else(|| ServerError::NotOwner {
-                user_id: user_id.to_string(), resource: "todo"
-            })?;
-    }
+    b.assert_user_is_owner_of_todo(&auth.user_id, id).await?;
 
     b.DB.prepare("UPDATE todos SET completed_at = ?1 WHERE id = ?2")
         .bind(&[(unix_timestamp() as i32).into(), id.into()])?

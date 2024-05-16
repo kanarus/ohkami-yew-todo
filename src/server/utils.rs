@@ -1,5 +1,6 @@
 use worker::D1Type;
 use crate::{models::Tag, Bindings};
+use super::errors::ServerError;
 
 
 impl Bindings {   
@@ -25,5 +26,20 @@ impl Bindings {
         }
 
         Ok(tags)
+    }
+
+    pub async fn assert_user_is_owner_of_todo(&self,
+        user_id: &str,
+        todo_id: &str
+    ) -> Result<(), ServerError> {
+        let owner_id = self.DB.prepare("SELECT user_id FROM todos WHERE id = ?")
+            .bind(&[todo_id.into()])?.first::<String>(Some("user_id")).await?;
+
+        (owner_id.as_deref() == Some(user_id)).then_some(())
+            .ok_or_else(|| ServerError::NotOwner {
+                user_id: user_id.to_string(), resource: "todo"
+            })?;
+
+        Ok(())
     }
 }
