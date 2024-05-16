@@ -1,8 +1,8 @@
-mod client;
+mod fetch;
 mod hooks;
 
 use crate::models::{SignupResponse, Todo};
-use client::Client;
+use fetch::Client;
 use hooks::use_tokenstore;
 use yew::prelude::*;
 use yew::suspense::{use_future, Suspense};
@@ -36,10 +36,10 @@ pub fn TODODemo() -> HtmlResult {
             if user_token.is_none() {
                 let SignupResponse { token } = Client::new(None)
                     .POST("/signup").await?.json().await?;
-                tokenstore.set(&token);
+                tokenstore.store(&token);
                 user_token.set(Some(Rc::new(token.into())));
             }
-            Result::<(), client::Error>::Ok(())
+            Result::<(), fetch::Error>::Ok(())
         }
     })? {
         web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();
@@ -74,7 +74,7 @@ pub fn TodoList(props: &TodoListProps) -> HtmlResult {
             let fetched_todos: Vec<Todo> = client
                 .GET("/api/todos").await?.json().await?;
             todos.set(fetched_todos);
-            Result::<(), client::Error>::Ok(())
+            Result::<(), fetch::Error>::Ok(())
         }
     })? {
         web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();

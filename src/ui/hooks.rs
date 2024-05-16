@@ -21,7 +21,7 @@ impl UseTokenStoreHandle {
         (&*self.storage).get(Self::STORAGE_KEY).unwrap().map(Rc::new)
     }
 
-    pub fn set(&self, token: &str) {
+    pub fn store(&self, token: &str) {
         (&*self.storage).set(Self::STORAGE_KEY, &token).unwrap();
     }
 }
