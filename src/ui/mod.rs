@@ -13,7 +13,7 @@ use std::rc::Rc;
 pub fn App() -> Html {
     html! {
         <>
-            <h1 class="w-full text-center text-slate-600 underline underline-offset-8">
+            <h1 class="w-full text-center text-slate-700 underline underline-offset-8">
                 {"Ohkami*Yew TODO Demo"}
             </h1>
             <Suspense>
@@ -82,9 +82,9 @@ pub fn TodoList(props: &TodoListProps) -> HtmlResult {
 
     Ok(html! {
         <div>
-            <div>
+            <div class="font-base space-x-1.5">
+                <span>{"[ ]"}</span>
                 <span>{"Sample Todo"}</span>
-                <span>{&false}</span>
             </div>
             {for todos.iter().map(|todo| {html! {
                 <div>

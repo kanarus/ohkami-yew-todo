@@ -13,7 +13,12 @@ struct Bindings;
 async fn my_worker() -> Ohkami {
     console_error_panic_hook::set_once();
 
-    Ohkami::new((
+    let fangs = {
+        #[cfg(debug_assertions)]
+        ohkami::builtin::fang::CORS::new("http://127.0.0.1:8080")
+    };
+
+    Ohkami::with(fangs, (
         /* `dist` is served by `--assets dist` of `dev` script in package.json */
 
         "/signup"

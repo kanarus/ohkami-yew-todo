@@ -5,7 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link data-trunk rel="rust" data-bin="front"/>
     <link data-trunk rel="tailwind-css" href="tailwind.css"/>
+    <link data-trunk rel="copy-file" href="YuseiMagic-Regular.ttf">
     <title>Ohkami*Yew TODO Demo</title>
+    <style>
+        @font-face {
+            font-family: "YuseiMagic";
+            src: url("YuseiMagic-Regular.ttf") format("truetype");
+        }
+        * {
+            font-family: "YuseiMagic";
+        }
+    </style>
 </head>
 <body class="bg-slate-200"></body>
 </html>
