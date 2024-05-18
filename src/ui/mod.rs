@@ -13,18 +13,20 @@ use std::rc::Rc;
 pub fn App() -> Html {
     html! {
         <>
-            <h1 class="w-full text-center text-slate-700 underline underline-offset-8">
-                {"Ohkami*Yew TODO Demo"}
-            </h1>
+            <header>
+                <h1 class="w-full text-center text-neutral-800 underline underline-offset-8">
+                    {"Ohkami*Yew TODO Demo"}
+                </h1>
+            </header>
             <Suspense>
-                <TODODemo />
+                <TodoDemo />
             </Suspense>
         </>
     }
 }
 
 #[function_component]
-pub fn TODODemo() -> HtmlResult {
+pub fn TodoDemo() -> HtmlResult {
     let tokenstore = use_tokenstore();
     let user_token = use_state(|| tokenstore.get());
 
@@ -49,7 +51,7 @@ pub fn TODODemo() -> HtmlResult {
         <>
             {user_token.as_ref().map(|token| html! {
                 <Suspense>
-                    <TodoList {token} />
+                    <TodoCard {token} />
                 </Suspense>
             })}
         </>
@@ -57,12 +59,12 @@ pub fn TODODemo() -> HtmlResult {
 }
 
 #[derive(Properties, PartialEq)]
-pub struct TodoListProps {
+pub struct TodoCardProps {
     token: Rc<String>,
 }
 
 #[function_component]
-pub fn TodoList(props: &TodoListProps) -> HtmlResult {
+pub fn TodoCard(props: &TodoCardProps) -> HtmlResult {
     let todos  = use_state(|| vec![]);
     let client = Rc::new(Client::new(props.token.clone()));
 
@@ -80,18 +82,60 @@ pub fn TodoList(props: &TodoListProps) -> HtmlResult {
         web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();
     }
 
+    let sample_todos = vec![
+        Todo {
+            id: String::new(),
+            tags: vec![],
+            content: String::from("Sample ToDo"),
+            completed: false,
+        },
+        Todo {
+            id: String::new(),
+            tags: vec![],
+            content: String::from("This is second sample ToDo, whitch is completed."),
+            completed: true,
+        },
+        Todo {
+            id: String::new(),
+            tags: vec![],
+            content: String::from("ゴミ捨て・荷物回収"),
+            completed: true,
+        },
+    ];
+
     Ok(html! {
-        <div>
-            <div class="font-base space-x-1.5">
-                <span>{"[ ]"}</span>
-                <span>{"Sample Todo"}</span>
-            </div>
-            {for todos.iter().map(|todo| {html! {
-                <div>
-                    <span>{&todo.content}</span>
-                    <span>{&todo.completed}</span>
+        <div class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2">
+            <header class="h-8 space-x-2 flex items-center">
+                <input
+                    autocomplete="off"
+                    value={"さんぷるとぅーどぅー"}
+                    class="grow border-none bg-inherit text-neutral-800 text-lg"
+                />
+                <img
+                    src="assets/icons/delete.svg"
+                    class="basis-4 h-6"
+                />
+            </header>
+
+            <hr class="border-neutral-400"/>
+
+            {for sample_todos.iter().map(|todo| html! {
+                <div class="flex items-center space-x-2">
+                    <img
+                        src={if todo.completed {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
+                        class="basis-4 h-6"
+                    />
+                    <input
+                        autocomplete="off"
+                        value={todo.content.clone()}
+                        class={if todo.completed {
+                            "grow border-none bg-inherit text-neutral-400"
+                        } else {
+                            "grow border-none bg-inherit text-neutral-800"
+                        }}
+                    />
                 </div>
-            }})}
+            })}
         </div>
     })
 }
