@@ -1,7 +1,7 @@
 mod api;
 mod models;
 
-use api::{complete_todo, create_todo, list_todos, signup, update_todo};
+use api::{signup, list_cards, create_card, update_card};
 use api::jwt;
 use ohkami::prelude::*;
 
@@ -25,12 +25,11 @@ async fn my_worker() -> Ohkami {
             .POST(signup),
 
         "/api".By(Ohkami::with(jwt::fang(), (
-            "/todos"
-                .GET(list_todos)
-                .POST(create_todo),
-            "/todos/:id"
-                .PUT(update_todo)
-                .PATCH(complete_todo)
+            "/cards"
+                .GET(list_cards)
+                .POST(create_card),
+            "/cards/:id"
+                .PUT(update_card),
         ))),
     ))
 }

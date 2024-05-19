@@ -1054,6 +1054,7 @@ dependencies = [
  "ohkami",
  "reqwest",
  "thiserror",
+ "wasm-bindgen-futures",
  "web-sys",
  "worker",
  "yew",

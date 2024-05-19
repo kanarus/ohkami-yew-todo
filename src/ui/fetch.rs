@@ -3,7 +3,6 @@ use ohkami::serde::Serialize;
 
 pub use reqwest::Error;
 
-
 pub struct Client(reqwest::Client);
 
 impl Client {

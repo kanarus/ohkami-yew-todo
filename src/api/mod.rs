@@ -5,7 +5,7 @@ pub mod utils;
 use self::jwt::JWTPayload;
 use self::errors::ServerError;
 use crate::Bindings;
-use crate::models::{CreateTodo, UpdateTodo, SignupResponse, Tag, Todo};
+use crate::models::{Card, SignupResponse, Todo, UpdateCard};
 use web_sys::{wasm_bindgen::JsCast, WorkerGlobalScope, js_sys};
 use ohkami::typed::status;
 use ohkami::serde::Deserialize;
@@ -30,48 +30,32 @@ pub async fn signup(
 }
 
 #[worker::send]
-pub async fn create_todo(
+pub async fn create_card(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-    req:  CreateTodo<'_>,
-) -> Result<status::Created<Todo>, ServerError> {
-    let tags = b.get_or_create_tags_by_names(&req.tags).await?;
-
+) -> Result<status::Created<Card>, ServerError> {
     let id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
         .crypto().unwrap().random_uuid();
 
-    b.DB.batch([
-        Some(
-            b.DB.prepare("INSERT INTO todos (
-                id, user_id, content
-            ) VALUES (
-                ?1, ?2,      ?3
-            )").bind(&[(&id).into(), (&auth.user_id).into(), req.content.into()])?
-        ),
-        (tags.len() > 0).then(||
-            b.DB.prepare(format!("INSERT INTO todo_tags (
-                todo_id, tag_id
-            ) VALUES {}", vec!["(?,?)"; tags.len()].join(",")))
-                .bind(&tags.iter()
-                    .map(|tag| [(&id).into(), tag.id.into()])
-                    .flatten().collect::<Vec<_>>()
-                )
-        ).transpose()?,
-    ].into_iter().flatten().collect()).await?;
+    b.DB.prepare("INSERT INTO cards (id, user_id) VALUES (?1, ?2)")
+        .bind(&[id.into(), (&auth.user_id).into()])?
+        .run().await?;
 
-    Ok(status::Created(Todo {
-        id,
-        tags,
-        content:   req.content.into(),
-        completed: false,
-    }))
+    Ok(status::Created(todo!()))
 }
 
 #[worker::send]
-pub async fn list_todos(
+pub async fn list_cards(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-) -> Result<Vec<Todo>, ServerError> {
+) -> Result<Vec<Card>, ServerError> {
+    let card_records = {
+
+    };
+
+    todo!()
+
+    /*
     let todo_records = {
         #[derive(Deserialize)] struct Record {
             id:            String,
@@ -104,16 +88,18 @@ pub async fn list_todos(
             r.tag_names_csv.unwrap().split(',').map(|name| name.to_string())
         ).map(|(id, name)| Tag { id, name }).collect()}
     }).collect())
+    */
 }
 
 #[worker::send]
-pub async fn update_todo(id: &str,
+pub async fn update_card(id: &str,
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-    req:  UpdateTodo<'_>,
+    req:  UpdateCard,
 ) -> Result<(), ServerError> {
-    b.assert_user_is_owner_of_todo(&auth.user_id, id).await?;
+    b.assert_user_is_owner_of_card(&auth.user_id, id).await?;
 
+    /*
     let UpdateTodo { content, tags } = req;
     let tags = match tags {
         None        => None,
@@ -143,20 +129,7 @@ pub async fn update_todo(id: &str,
                 )
         ).transpose()?,
     ].into_iter().flatten().collect()).await?;
-
-    Ok(())
-}
-
-#[worker::send]
-pub async fn complete_todo(id: &str,
-    b:    Bindings,
-    auth: Memory<'_, JWTPayload>,
-) -> Result<(), ServerError> {
-    b.assert_user_is_owner_of_todo(&auth.user_id, id).await?;
-
-    b.DB.prepare("UPDATE todos SET completed_at = ?1 WHERE id = ?2")
-        .bind(&[(unix_timestamp() as i32).into(), id.into()])?
-        .run().await?;
+    */
 
     Ok(())
 }

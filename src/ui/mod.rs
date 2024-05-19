@@ -1,7 +1,7 @@
 mod fetch;
 mod hooks;
 
-use crate::models::{SignupResponse, Todo};
+use crate::models::{Card, SignupResponse, Todo, UpdateCard};
 use fetch::Client;
 use hooks::use_tokenstore;
 use yew::prelude::*;
@@ -19,28 +19,44 @@ pub fn App() -> Html {
                 </h1>
             </header>
             <Suspense>
-                <TodoDemo />
+                <TodoCardList />
             </Suspense>
         </>
     }
 }
 
 #[function_component]
-pub fn TodoDemo() -> HtmlResult {
+fn TodoCardList() -> HtmlResult {
     let tokenstore = use_tokenstore();
     let user_token = use_state(|| tokenstore.get());
+
+    let todo_cards = use_state(|| vec![]);
 
     if let Err(err) = &*use_future(|| {
         let tokenstore = tokenstore.clone();
         let user_token = user_token.clone();
 
+        let todo_cards = todo_cards.clone();
+
         async move {
-            if user_token.is_none() {
-                let SignupResponse { token } = Client::new(None)
-                    .POST("/signup").await?.json().await?;
-                tokenstore.store(&token);
-                user_token.set(Some(Rc::new(token.into())));
-            }
+            let token = match &*user_token {
+                Some(token) => Rc::clone(token),
+                None => {
+                    let SignupResponse { token } = Client::new(None)
+                        .POST("/signup").await?.json().await?;
+                    let token = Rc::new(Into::<String>::into(token));
+                    {
+                        tokenstore.store(&token);
+                        user_token.set(Some(Rc::clone(&token)));
+                    }
+                    token
+                },
+            };
+
+            let cards: Vec<Card> = Client::new(token)
+                .GET("/api/cards").await?.json().await?;
+            todo_cards.set(cards);
+
             Result::<(), fetch::Error>::Ok(())
         }
     })? {
@@ -49,10 +65,13 @@ pub fn TodoDemo() -> HtmlResult {
 
     Ok(html! {
         <>
-            {user_token.as_ref().map(|token| html! {
-                <Suspense>
-                    <TodoCard {token} />
-                </Suspense>
+            {user_token.as_ref().map(|token| html!{
+                for todo_cards.iter().map(|card| html! {
+                    <TodoCard
+                        bind={Rc::new(card.clone())}
+                        token={Rc::clone(token)}
+                    />
+                })
             })}
         </>
     })
@@ -60,57 +79,45 @@ pub fn TodoDemo() -> HtmlResult {
 
 #[derive(Properties, PartialEq)]
 pub struct TodoCardProps {
+    bind:  Rc<Card>,
     token: Rc<String>,
 }
 
 #[function_component]
 pub fn TodoCard(props: &TodoCardProps) -> HtmlResult {
-    let todos  = use_state(|| vec![]);
-    let client = Rc::new(Client::new(props.token.clone()));
+    let bind   = use_state(|| Rc::clone(&props.bind));
+    let client = Rc::new(Client::new(Rc::clone(&props.token)));
 
-    if let Err(err) = &*use_future(|| {
-        let todos  = todos.clone();
+    let onblur = Callback::from({
+        let bind   = bind.clone();
         let client = client.clone();
-
-        async move {
-            let fetched_todos: Vec<Todo> = client
-                .GET("/api/todos").await?.json().await?;
-            todos.set(fetched_todos);
-            Result::<(), fetch::Error>::Ok(())
-        }
-    })? {
-        web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();
-    }
-
-    let sample_todos = vec![
-        Todo {
-            id: String::new(),
-            tags: vec![],
-            content: String::from("Sample ToDo"),
-            completed: false,
-        },
-        Todo {
-            id: String::new(),
-            tags: vec![],
-            content: String::from("This is second sample ToDo, whitch is completed."),
-            completed: true,
-        },
-        Todo {
-            id: String::new(),
-            tags: vec![],
-            content: String::from("ゴミ捨て・荷物回収"),
-            completed: true,
-        },
-    ];
+        move |_: FocusEvent| wasm_bindgen_futures::spawn_local({
+            let bind   = bind.clone();
+            let client = client.clone();
+            async move {
+                if let Err(err) = client.PUTwith(UpdateCard {
+                    title: bind.title.clone(),
+                    todos: bind.todos.clone()
+                }, format!("/api/cards/{}", &bind.id)).await {
+                    web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();
+                }
+            }
+        })
+    });
 
     Ok(html! {
-        <div class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2">
+        <div {onblur}
+            class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2"
+        >
             <header class="h-8 space-x-2 flex items-center">
-                <input
-                    autocomplete="off"
-                    value={"さんぷるとぅーどぅー"}
-                    class="grow border-none bg-inherit text-neutral-800 text-lg"
-                />
+                <div class="grow h-7">
+                    <textarea
+                        autocomplete="off"
+                        spellcheck="false"
+                        value={(&*bind.title).to_string()}
+                        class="resize-none border-none_ w-full h-full outline-none bg-inherit text-neutral-800 text-lg"
+                    />
+                </div>
                 <img
                     src="assets/icons/delete.svg"
                     class="basis-4 h-6"
@@ -119,21 +126,26 @@ pub fn TodoCard(props: &TodoCardProps) -> HtmlResult {
 
             <hr class="border-neutral-400"/>
 
-            {for sample_todos.iter().map(|todo| html! {
-                <div class="flex items-center space-x-2">
-                    <img
-                        src={if todo.completed {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
-                        class="basis-4 h-6"
-                    />
-                    <input
-                        autocomplete="off"
-                        value={todo.content.clone()}
-                        class={if todo.completed {
-                            "grow border-none bg-inherit text-neutral-400"
-                        } else {
-                            "grow border-none bg-inherit text-neutral-800"
-                        }}
-                    />
+            {for bind.todos.iter().map(|todo| html! {
+                <div class="flex items-center space-x-2 | border border-solid border-red-500">
+                    <div class="basis-4 h-6 | border border-solid">
+                        <img
+                            src={if todo.as_ref().is_some_and(|todo| todo.completed) {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
+                            class="basis-4 h-6 | border border-solid"
+                        />
+                    </div>
+                    <div class="grow h-6 | border border-solid border-blue-500">
+                        <textarea
+                            autocomplete="off"
+                            spellcheck="false"
+                            value={todo.as_ref().map(|todo| todo.content.to_string())}
+                            class={if todo.as_ref().is_some_and(|todo| todo.completed) {
+                                "m-0 p-0 resize-none w-full h-full border-none_ outline-none bg-inherit text-neutral-400"
+                            } else {
+                                "m-0 p-0 resize-none w-full h-full border-none_ outline-none bg-inherit text-neutral-800"
+                            }}
+                        />
+                    </div>
                 </div>
             })}
         </div>
