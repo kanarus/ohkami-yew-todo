@@ -5,6 +5,8 @@ use yew::prelude::*;
 pub struct DeleteButtonProps {
     pub on_click: Callback<()>,
 
+    #[prop_or("")]
+    pub class:    &'static str,
     #[prop_or(false)]
     pub disabled: bool,
 }
@@ -12,14 +14,16 @@ pub struct DeleteButtonProps {
 #[function_component]
 pub fn DeleteButton(props: &DeleteButtonProps) -> Html {
     html! (
-        <a
-            onclick={props.on_click.reform(|_| ())}
-            class={props.disabled.then_some("pointer-events-none")}
-        >
-            <img
-                src={if props.disabled {"assets/icons/delete_disabled.svg"} else {"assets/icons/delete.svg"}}
-            />
-        </a>
+        <div class={props.class}>
+            <a
+                onclick={props.on_click.reform(|_| ())}
+                class={props.disabled.then_some("pointer-events-none")}
+            >
+                <img
+                    src={if props.disabled {"assets/icons/delete_disabled.svg"} else {"assets/icons/delete.svg"}}
+                />
+            </a>
+        </div>
     )
 }
 
@@ -29,6 +33,8 @@ pub struct CheckBoxButtonProps {
     pub on_click: Callback<()>,
     pub checked:  bool,
 
+    #[prop_or("")]
+    pub class:    &'static str,
     #[prop_or(false)]
     pub disabled: bool,
 }
@@ -36,24 +42,27 @@ pub struct CheckBoxButtonProps {
 #[function_component]
 pub fn CheckBoxButton(props: &CheckBoxButtonProps) -> Html {
     html! (
-        <a
-            onclick={props.on_click.reform(|_| ())}
-            class={props.disabled.then_some("pointer-events-none")}
-        >
-            <img
-                src={if props.checked {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
-            />
-        </a>
+        <div class={props.class}>
+            <a
+                onclick={props.on_click.reform(|_| ())}
+                class={props.disabled.then_some("pointer-events-none")}
+            >
+                <img
+                    src={if props.checked {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
+                />
+            </a>
+        </div>
     )
 }
 
 
 #[derive(Properties, PartialEq)]
 pub struct TextInputProps {
-    #[prop_or_default]
-    pub class:    &'static str,
     pub value:    String,
     pub on_input: Callback<String>,
+
+    #[prop_or("")]
+    pub class: &'static str,
 }
 
 #[function_component]

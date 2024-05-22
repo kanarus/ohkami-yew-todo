@@ -19,263 +19,176 @@ pub fn App() -> Html {
                     {"Ohkami*Yew TODO Demo"}
                 </h1>
             </header>
-            <Suspense>
-                <TodoCardList />
-            </Suspense>
+            <main>
+                <Suspense fallback={html!(<p>{"Loading..."}</p>)}>
+                    <Main />
+                </Suspense>
+            </main>
         </>
     }
 }
 
 #[function_component]
-fn TodoCardList() -> HtmlResult {
-    let todo_cards = use_state(|| vec![]);
-
-    let client = match *use_future(|| Client::new())? {
-        Ok(client) => client,
-        Err(error) => return Ok(html!(
-            <p>{format!("Failed to sign up: {error}")}</p>
-        ))
+fn Main() -> HtmlResult {
+    let Ok(ref client) = *use_future(|| async {Client::new().await.map(Rc::new)})? else {
+        return Ok(html!(<p>{format!("Can't perform sign up")}</p>))
     };
 
-    // if let Err(err) = &*use_future(|| {
-    //     let tokenstore = tokenstore.clone();
-    //     let user_token = user_token.clone();
-// 
-    //     let todo_cards = todo_cards.clone();
-// 
-    //     async move {
-    //         let token = match &*user_token {
-    //             Some(token) => Rc::clone(token),
-    //             None => {
-    //                 let SignupResponse { token } = Client::new(None)
-    //                     .POST("/signup").await?.json().await?;
-    //                 let token = Rc::new(Into::<String>::into(token));
-    //                 {
-    //                     tokenstore.store(&token);
-    //                     user_token.set(Some(Rc::clone(&token)));
-    //                 }
-    //                 token
-    //             },
-    //         };
-// 
-    //         let cards: Vec<Card> = Client::new(token)
-    //             .GET("/api/cards").await?.json().await?;
-    //         todo_cards.set(cards);
-// 
-    //         Result::<(), fetch::Error>::Ok(())
-    //     }
-    // })? {
-    //     web_sys::window().unwrap().alert_with_message(&err.to_string()).unwrap();
-    // }
+    Ok(html!(
+        <Suspense fallback={html!(<p>{"Loading..."}</p>)}>
+            <TodoCardList client={client.clone()}/>
+        </Suspense>
+    ))
+}
 
-    let handle_check_todo = Callback::from({
-        let todo_cards = todo_cards.clone();
-        move |index: usize| todo_cards.set({
-            let mut new_cards = (&*todo_cards).clone();
-            new_cards[index].
-            new_cards
-        })
-    });
 
-    let handle_edit_by_index = |index: usize| Callback::from({
-        let cards = todo_cards.clone();
+#[derive(Properties)]
+struct TodoCardListProps {
+    client: Rc<Client>,
+}
+impl PartialEq for TodoCardListProps {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.client, &other.client)
+    }
+}
 
-        move |editted_card: Card| cards.set({
-            let mut new_cards = (&*cards).clone();
-            new_cards[index] = editted_card;
-            new_cards
-        })
-    });
+#[function_component]
+fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult {
+    let cards = use_state(|| vec![]);
 
-    let handle_sync = Callback::from({
-        let user_token = user_token.clone();
-        let todo_cards = todo_cards.clone();
-        
-        move |_| wasm_bindgen_futures::spawn_local({
-            let Card { id, title, todos } = todo_cards[index].clone();
-            let Some(token) = user_token.as_ref().map(Rc::clone) else {
-                return web_sys::window().unwrap().alert_with_message("You need to sign up").unwrap();
-            };
+    if use_future(|| {
+        let (client, cards) = (client.clone(), cards.clone());
+        async move {
+            let fetched_cards: Vec<Card> = client
+                .GET("/api/cards").await?.json().await?;
+            cards.set(fetched_cards);
+            Result::<(), fetch::Error>::Ok(())
+        }
+    })?.is_err() {
+        web_sys::window().unwrap().alert_with_message("Failed to fetch your TODOs").unwrap();
+    }
 
-            async move {
-                if let Err(err) = Client::new(token).PUTwith(
-                    UpdateCard { title, todos},
-                    format!("/api/cards/{id}")
-                ).await {
-                    web_sys::window().unwrap().alert_with_message(&format!("Failed to save TODOs: {err}")).unwrap();
+    let handlers = (0..cards.len()).map(|i| TodoCardHandler {
+        on_request_save: Callback::from({
+            let (client, cards) = (client.clone(), cards.clone());
+            move |_| wasm_bindgen_futures::spawn_local({
+                let (client, cards) = (client.clone(), cards.clone());
+                async move {
+                    let Card { id, title, todos } = cards[i].clone();
+                    if client.PUTwith(UpdateCard { title, todos }, format!("/api/cards/{id}")).await.is_err() {
+                        web_sys::window().unwrap().alert_with_message("Failed to save this update").unwrap();
+                    }
                 }
+            })
+        }),
+        on_click_delete: Callback::from({
+            let (client, cards) = (client.clone(), cards.clone());
+            move |_| wasm_bindgen_futures::spawn_local({
+                let (client, cards) = (client.clone(), cards.clone());
+                async move {
+                    let Card { id, .. } = cards[i].clone();
+                    match client.DELETE(format!("/api/cards/{id}")).await {
+                        Err(_) => web_sys::window().unwrap().alert_with_message("Failed to delete this TODO").unwrap(),
+                        Ok(_)  => cards.set({
+                            let mut new_cards = (&*cards).clone();
+                            new_cards.remove(i);
+                            new_cards
+                        }),
+                    }
+                }
+            })
+        }),
+        on_edit_title: Callback::from({
+            let cards = cards.clone();
+            move |new_title| {
+                cards.set({
+                    let mut new_cards = (&*cards).clone();
+                    new_cards[i].title = new_title;
+                    new_cards
+                })
             }
-        })
-    });
-
-    let handle_delete = Callback::from({
-        let id = todo_cards[index].id.clone();
-
-        move |_| wasm_bindgen_futures::spawn_local({
-            async move {}
-        })
+        }),
+        on_check_todo_by: (0..cards[i].todos.len()).map(|j| Callback::from({
+            let cards = cards.clone();
+            move |_| cards.set({
+                let mut new_cards = (&*cards).clone();
+                new_cards[i].todos[j].completed = true;
+                new_cards
+            })
+        })).collect::<Vec<_>>().try_into().unwrap(),
+        on_edit_todo_by: (0..cards[i].todos.len()).map(|j| Callback::from({
+            let cards = cards.clone();
+            move |new_content| cards.set({
+                let mut new_cards = (&*cards).clone();
+                new_cards[i].todos[j].content = new_content;
+                new_cards
+            })
+        })).collect::<Vec<_>>().try_into().unwrap(),
     });
 
     Ok(html! {
-        for todo_cards.iter().enumerate().map(|(i, card)| html! {
+        for cards.iter().cloned().zip(handlers).map(|(card, handler)| html! {
             <TodoCard
-                bind={card.clone()}
-                handle_check_todo={}
-                handle_edit_todo={handle_edit_by_index(i)}
-                handle_sync={handle_sync}
-                handle_delete={handle_delete}
+                bind={card}
+                handler={handler}
             />
         })
     })
 }
 
 
-
 #[derive(Properties, PartialEq)]
 struct TodoCardProps {
-    bind: Card,
-    on_request_save: Callback<()>,
-    on_edit_title:   Callback<String>,
-    on_click_delete: Callback<()>,
-    on_check_todo:   Callback<usize>,
-    on_edit_todo:    Callback<usize>,
+    bind:    Card,
+    handler: TodoCardHandler,
+}
+
+#[derive(PartialEq)]
+struct TodoCardHandler {
+    on_request_save:  Callback<()>,
+    on_click_delete:  Callback<()>,
+    on_edit_title:    Callback<String>,
+    on_check_todo_by: [Callback<()>; Card::N_TODOS],
+    on_edit_todo_by:  [Callback<String>; Card::N_TODOS],
 }
 
 #[function_component]
 fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
-        <div class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2">
+        <div
+            class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2"
+            onblur={props.handler.on_request_save.reform(|_: FocusEvent| ())}
+        >
             <header class="h-8 space-x-2 flex items-center">
                 <TextInput
-                    class={"grow h-7 text-neutral-800 text-lg"}
+                    class="grow h-7 text-neutral-800 text-lg"
                     value={props.bind.title.clone()}
-                    on_input={props.on_edit_title.clone()}
+                    on_input={props.handler.on_edit_title.clone()}
                 />
                 <DeleteButton
-                    on_click={props.on_click_delete.clone()}
+                    class="basis-4 h-6"
+                    on_click={props.handler.on_click_delete.clone()}
                 />
             </header>
 
             <hr class="border-neutral-400"/>
 
-            {for props.bind.todos.iter().enumerate().map(|(i, todo)| html!(
-                todo!()
-            ))}
+            <ul>{for props.bind.todos.iter().enumerate().map(|(i, todo)| html!(
+                <li class="list-none flex items-center space-x-2">
+                    <div class={if todo.completed {"text-neutral-400"} else {"text-neutral-800"}}>
+                        <CheckBoxButton
+                            class="basis-4 h-6"
+                            checked={todo.completed}
+                            on_click={props.handler.on_check_todo_by[i].clone()}
+                        />
+                        <TextInput
+                            class="grow h-6 m-0 p-0"
+                            value={todo.content.clone()}
+                            on_input={props.handler.on_edit_todo_by[i].clone()}
+                        />
+                    </div>
+                </li>
+            ))}</ul>
         </div>
     )
 }
-
-
-/*
-#[derive(Properties, PartialEq)]
-pub struct TodoCardProps {
-    bind:              Card,
-    handle_check_todo: Callback<usize>,
-    handle_edit_todo:  Callback<usize>,
-    handle_delete:     Callback<()>,
-    handle_sync:       Callback<()>,
-}
-
-#[function_component]
-pub fn TodoCard(props: &TodoCardProps) -> Html {
-    html! {
-        <TodoCardLayout
-            contents={TodoCardContents {
-                id:      props.bind.id.clone(),
-                title:   props.bind.title.clone(),
-                entries: props.bind.todos.iter().map(|Todo { content, completed }| TodoEntry {
-                    checked: *completed,
-                    body:    content.clone(),
-                }).collect()
-            }}
-            request_check_todo={props.handle_check_todo.clone()}
-            request_edit_todo={props.handle_edit_todo.clone()}
-            request_delete={props.handle_delete.clone()}
-            request_sync={props.handle_sync.clone()}
-        />
-    }
-}
-
-
-#[derive(Properties, PartialEq)]
-pub struct TodoCardLayoutProps {
-    pub contents: TodoCardContents,
-
-    pub request_check_todo: Callback<usize>,
-    pub request_edit_todo:  Callback<usize>,
-    pub request_delete:     Callback<()>,
-    pub request_sync:       Callback<()>,
-}
-#[derive(PartialEq, Clone)]
-pub struct TodoCardContents {
-    pub id:      String,
-    pub title:   String,
-    pub entries: Vec<TodoEntry>,
-}
-#[derive(PartialEq, Clone)]
-pub struct TodoEntry {
-    pub checked: bool,
-    pub body:    String,
-}
-
-#[function_component]
-pub fn TodoCardLayout(props: &TodoCardLayoutProps) -> Html {
-    let on_blur = props.request_sync.reform(|_: FocusEvent| ());
-
-    let on_click_delete = props.request_delete.reform(|_: MouseEvent| ());
-
-    let on_check_todo_by_index = |i| props.request_check_todo.reform(move |_: MouseEvent| i);
-
-    let on_edit_todo_by_index = |i| props.request_edit_todo.reform(move |_: Event| i);
-
-    html! {
-        <div onblur={on_blur}
-            class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2"
-        >
-            <header class="h-8 space-x-2 flex items-center">
-                <div class="grow h-7">
-                    <textarea
-                        autocomplete="off"
-                        spellcheck="false"
-                        value={props.contents.title.clone()}
-                        class="resize-none border-none_ w-full h-full outline-none bg-inherit text-neutral-800 text-lg"
-                    />
-                </div>
-                <a onclick={on_click_delete}>
-                    <img
-                        src="assets/icons/delete.svg"
-                        class="basis-4 h-6"
-                    />
-                </a>
-            </header>
-
-            <hr class="border-neutral-400"/>
-
-            {for props.contents.entries.iter().enumerate().map(|(i, TodoEntry { checked, body })| html! {
-                <div class="flex items-center space-x-2 | border border-solid border-red-500">
-                    <div class="basis-4 h-6 | border border-solid">
-                        <a onclick={on_check_todo_by_index(i)}>
-                            <img
-                                src={if *checked {"assets/icons/check_box.svg"} else {"assets/icons/check_box_outline_blank.svg"}}
-                                class="basis-4 h-6 | border border-solid"
-                            />
-                        </a>
-                    </div>
-                    <div class="grow h-6 | border border-solid border-blue-500">
-                        <textarea onchange={on_edit_todo_by_index(i)}
-                            autocomplete="off"
-                            spellcheck="false"
-                            value={body.clone()}
-                            class={if *checked {
-                                "m-0 p-0 resize-none w-full h-full border-none_ outline-none bg-inherit text-neutral-400"
-                            } else {
-                                "m-0 p-0 resize-none w-full h-full border-none_ outline-none bg-inherit text-neutral-800"
-                            }}
-                        />
-                    </div>
-                </div>
-            })}
-        </div>
-    }
-}
-*/

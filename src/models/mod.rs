@@ -18,7 +18,6 @@ impl Card {
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct Todo {
-    // pub id:        ID,
     pub content:   String,
     pub completed: bool,
 }
