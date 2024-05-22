@@ -133,3 +133,13 @@ pub async fn update_card(id: &str,
 
     Ok(())
 }
+
+#[worker::send]
+pub async fn delete_card(id: &str,
+    b:    Bindings,
+    auth: Memory<'_, JWTPayload>
+) -> Result<(), ServerError> {
+    b.assert_user_is_owner_of_card(&auth.user_id, id).await?;
+
+    Ok(())
+}

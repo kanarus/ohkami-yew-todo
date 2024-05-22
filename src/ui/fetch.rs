@@ -1,25 +1,38 @@
-use std::rc::Rc;
 use ohkami::serde::Serialize;
+use crate::models::SignupResponse;
 
 pub use reqwest::Error;
+
 
 pub struct Client(reqwest::Client);
 
 impl Client {
+    const TOKEN_STORAGE_KEY: &'static str = "ohkami-yew-todo-demo-token";
+
     const ORIGIN: &'static str = {
         #[cfg(debug_assertions)] {"http://localhost:8787"}
         #[cfg(not(debug_assertions))] {"https://ohkami-yew-todo.kanarus.workers.dev"}
     };
 
-    pub fn new(token: impl Into<Option<Rc<String>>>) -> Self {
-        let mut client = reqwest::ClientBuilder::new();
-        if let Some(token) = token.into() {
-            client = client.default_headers(FromIterator::from_iter([(
+    pub async fn new() -> Result<Self, Error> {
+        let token = {
+            let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+            local_storage.get(Self::TOKEN_STORAGE_KEY).unwrap().unwrap_or({
+                let SignupResponse { token } = reqwest::Client::new()
+                    .post("/signup").send().await?.json().await?;
+                local_storage.set(Self::TOKEN_STORAGE_KEY, &token).unwrap();
+                token.into()
+            })
+        };
+
+        let client = reqwest::ClientBuilder::new()
+            .default_headers(FromIterator::from_iter([(
                 "Authorization".try_into().unwrap(),
                 format!("Bearer {token}").try_into().unwrap()
             )]))
-        }
-        Self(client.build().unwrap())
+            .build().unwrap();
+
+        Ok(Self(client))
     }
 }
 

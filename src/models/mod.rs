@@ -3,20 +3,22 @@ use ohkami::typed::Payload;
 use ohkami::builtin::{payload::JSON, item::JWTToken};
 
 
+pub type ID = String;
+
 #[Payload(JSON/SD)]
 #[derive(PartialEq, Clone)]
 pub struct Card {
-    pub id:    String,
+    pub id:    ID,
     pub title: String,
-    pub todos: [Option<Todo>; Self::TODO_LIMIT],
+    pub todos: [Todo; Self::N_TODOS],
 }
 impl Card {
-    pub const TODO_LIMIT: usize = 10;
+    pub const N_TODOS: usize = 10;
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct Todo {
-    pub id:        String,
+    // pub id:        ID,
     pub content:   String,
     pub completed: bool,
 }
@@ -29,5 +31,5 @@ pub struct SignupResponse {
 #[Payload(JSON/SD)]
 pub struct UpdateCard {
     pub title: String,
-    pub todos: [Option<Todo>; Card::TODO_LIMIT],
+    pub todos: [Todo; Card::N_TODOS],
 }

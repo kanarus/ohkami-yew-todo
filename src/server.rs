@@ -1,7 +1,7 @@
 mod api;
 mod models;
 
-use api::{signup, list_cards, create_card, update_card};
+use api::{signup, list_cards, create_card, update_card, delete_card};
 use api::jwt;
 use ohkami::prelude::*;
 
@@ -29,7 +29,8 @@ async fn my_worker() -> Ohkami {
                 .GET(list_cards)
                 .POST(create_card),
             "/cards/:id"
-                .PUT(update_card),
+                .PUT(update_card)
+                .DELETE(delete_card),
         ))),
     ))
 }
