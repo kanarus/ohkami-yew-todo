@@ -133,27 +133,34 @@ fn TodoCardList() -> HtmlResult {
 
 #[derive(Properties, PartialEq)]
 struct TodoCardProps {
-    title:    String,
-    toolbox:  Html,
-    children: Html,
+    bind: Card,
+    on_request_save: Callback<()>,
+    on_edit_title:   Callback<String>,
+    on_click_delete: Callback<()>,
+    on_check_todo:   Callback<usize>,
+    on_edit_todo:    Callback<usize>,
 }
 
 #[function_component]
-pub fn TodoCard(props: &TodoCardProps) -> Html {
+fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
         <div class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2">
             <header class="h-8 space-x-2 flex items-center">
                 <TextInput
                     class={"grow h-7 text-neutral-800 text-lg"}
-                    value={props.title.clone()}
-                    on_input={Callback::from(|_| todo!())}
+                    value={props.bind.title.clone()}
+                    on_input={props.on_edit_title.clone()}
                 />
-                {props.toolbox.clone()}
+                <DeleteButton
+                    on_click={props.on_click_delete.clone()}
+                />
             </header>
 
             <hr class="border-neutral-400"/>
 
-            {props.children.clone()}
+            {for props.bind.todos.iter().enumerate().map(|(i, todo)| html!(
+                todo!()
+            ))}
         </div>
     )
 }

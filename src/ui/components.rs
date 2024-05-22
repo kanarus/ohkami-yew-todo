@@ -2,9 +2,11 @@ use yew::prelude::*;
 
 
 #[derive(Properties, PartialEq)]
-struct DeleteButtonProps {
-    on_click: Callback<()>,
-    disabled: bool,
+pub struct DeleteButtonProps {
+    pub on_click: Callback<()>,
+
+    #[prop_or(false)]
+    pub disabled: bool,
 }
 
 #[function_component]
@@ -23,10 +25,12 @@ pub fn DeleteButton(props: &DeleteButtonProps) -> Html {
 
 
 #[derive(Properties, PartialEq)]
-struct CheckBoxButtonProps {
-    on_click: Callback<()>,
-    checked:  bool,
-    disabled: bool,
+pub struct CheckBoxButtonProps {
+    pub on_click: Callback<()>,
+    pub checked:  bool,
+
+    #[prop_or(false)]
+    pub disabled: bool,
 }
 
 #[function_component]
@@ -54,13 +58,21 @@ pub struct TextInputProps {
 
 #[function_component]
 pub fn TextInput(props: &TextInputProps) -> Html {
+    let TextInputProps { class, value, on_input } = props;
+
+    let on_input = on_input.reform(|e: Event| {
+        use web_sys::{HtmlTextAreaElement, wasm_bindgen::JsCast};
+        e.target().unwrap().dyn_into::<HtmlTextAreaElement>().unwrap().value()
+    });
+
     html!(
-        <div class={props.class}>
+        <div class={*class}>
             <textarea
+                class="resize-none border-none w-full h-full outline-none bg-inherit"
                 autocomplete="off"
                 spellcheck="false"
-                value={props.value.clone()}
-                class="resize-none border-none w-full h-full outline-none bg-inherit"
+                value={value.clone()}
+                onchange={on_input}
             />
         </div>
     )
