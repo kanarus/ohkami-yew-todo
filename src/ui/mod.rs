@@ -4,7 +4,7 @@ mod components;
 use fetch::Client;
 use components::{CheckBoxButton, DeleteButton, TextInput};
 
-use crate::models::{Card, SignupResponse, Todo, UpdateCard, ID};
+use crate::models::{Card, UpdateCard};
 use yew::prelude::*;
 use yew::suspense::{use_future, Suspense};
 use std::rc::Rc;
@@ -108,22 +108,22 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
                 })
             }
         }),
-        on_check_todo_by: (0..cards[i].todos.len()).map(|j| Callback::from({
+        on_check_todo_by: std::array::from_fn(|j| Callback::from({
             let cards = cards.clone();
             move |_| cards.set({
                 let mut new_cards = (&*cards).clone();
                 new_cards[i].todos[j].completed = true;
                 new_cards
             })
-        })).collect::<Vec<_>>().try_into().unwrap(),
-        on_edit_todo_by: (0..cards[i].todos.len()).map(|j| Callback::from({
+        })),
+        on_edit_todo_by: std::array::from_fn(|j| Callback::from({
             let cards = cards.clone();
             move |new_content| cards.set({
                 let mut new_cards = (&*cards).clone();
                 new_cards[i].todos[j].content = new_content;
                 new_cards
             })
-        })).collect::<Vec<_>>().try_into().unwrap(),
+        })),
     });
 
     Ok(html! {
