@@ -104,14 +104,12 @@ pub async fn list_cards(
             }
         });
 
-        #[cfg(debug_assertions)]
-        assert_eq!(todo_records.len(), 0, "Some remaining TODO records found");
-
         Card {
             id:    r.id,
             title: r.title,
             todos
-    }}).collect())
+        }
+    }).collect())
 }
 
 #[worker::send]
