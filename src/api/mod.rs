@@ -11,7 +11,7 @@ use ohkami::typed::status;
 use ohkami::serde::Deserialize;
 use ohkami::utils::unix_timestamp;
 use ohkami::Memory;
-use yew::html::IntoPropValue;
+use std::array;
 
 
 #[worker::send]
@@ -42,7 +42,7 @@ pub async fn create_card(
         b.DB.prepare("INSERT INTO cards (id, user_id, created_at) VALUES (?1, ?2, ?3)")
             .bind(&[(&id).into(), (&auth.user_id).into(), (unix_timestamp() as usize).into()])?,
         b.DB.prepare(format!("INSERT INTO todos (card_id) VALUES {}", ["(?)"; Card::N_TODOS].join(",")))
-            .bind(&std::array::from_fn::<_, {Card::N_TODOS}, _>(|_| (&id).into()))?,
+            .bind(&array::from_fn::<_, {Card::N_TODOS}, _>(|_| (&id).into()))?,
     ]).await?;
 
     Ok(status::Created(Card {
@@ -76,47 +76,41 @@ pub async fn list_cards(
             content:      String,
             completed_at: Option<u64>,
         }
-        let mut records = b.DB.prepare(format!(
-            "SELECT card_id, content, completed_at FROM todos WHERE card_id IN ({})",
-            ["?"].join(",")))
-            .bind(&card_records.iter().map(|r| (&r.id).into()).collect::<Vec<_>>())?
-            .all().await?.results::<Record>()?;
-        records.sort_unstable_by(|a, b| str::cmp(&a.card_id, &b.card_id));
-        records
+        b.DB.prepare(format!(
+                "SELECT card_id, content, completed_at FROM todos
+                WHERE card_id IN ({})
+                ORDER BY CASE card_id {} END, id DESC",
+                /* reversed order to pop later from smaller card_id, id */
+                ["?"; Card::N_TODOS].join(","),
+                array::from_fn::<_, {Card::N_TODOS}, _>(|o| Card::N_TODOS - o)
+                    .map(|rank| format!("WHEN ? THEN {rank}")).join(" ")
+            ))
+            .bind(&Iterator::chain(card_records.iter(), card_records.iter())
+                .map(|r| (&r.id).into()).collect::<Vec<_>>()
+            )?
+            .all().await?.results::<Record>()?
     };
 
     Ok(card_records.into_iter().map(|r| {
-        let mut todos = unsafe {use std::mem::MaybeUninit;
-            // SAFETY: An uninitialized `[MaybeUninit<_>; LEN]` is valid.
-            MaybeUninit::<[MaybeUninit<Todo>; Card::N_TODOS]>::uninit().assume_init()
-        };
+        let todos = array::from_fn(|_| {
+            let next_todo = todo_records.pop().unwrap();
 
-        let todos_head = todo_records.iter()
-            .step_by(Card::N_TODOS)
-            .position(|t| t.card_id == r.id).unwrap();
+            #[cfg(debug_assertions)]
+            assert_eq!(next_todo.card_id, r.id, "Popped TODO has unexpected card_id");
 
-        if todos_head + Card::N_TODOS == todo_records.len() {
-            for i in (0..Card::N_TODOS).rev() {
-                let r = todo_records.pop().unwrap();
-                todos[i].write(Todo {
-                    content:   r.content,
-                    completed: r.completed_at.is_some()
-                });
+            Todo {
+                content:   next_todo.content,
+                completed: next_todo.completed_at.is_some()
             }
-        } else {
-            for i in (todos_head..(todos_head + Card::N_TODOS)).rev() {
-                let r = todo_records.swap_remove(i);
-                todos[i].write(Todo {
-                    content:   r.content,
-                    completed: r.completed_at.is_some()
-                });
-            }
-        }
+        });
+
+        #[cfg(debug_assertions)]
+        assert_eq!(todo_records.len(), 0, "Some remaining TODO records found");
 
         Card {
             id:    r.id,
             title: r.title,
-            todos: todos.map(|mu| unsafe {mu.assume_init()})
+            todos
     }}).collect())
 }
 
@@ -128,16 +122,50 @@ pub async fn update_card(id: &str,
 ) -> Result<(), ServerError> {
     b.assert_user_is_owner_of_card(&auth.user_id, id).await?;
 
-    let UpdateCard { title, todos } = req;
+    let current_title = b.DB.prepare("SELECT title FROM cards WHERE id = ?")
+        .bind(&[id.into()])?.first::<String>(Some("id")).await?.unwrap();
 
-    let todo_ids_csv = b.DB.prepare("SELECT todo_ids_csv FROM cards WHERE id = ?")
-        .bind(&[id.into()])?.first::<usize>(Some("todo_ids_csv")).await?.unwrap();
+    let current_todos = {
+        #[derive(Deserialize)] struct Record {
+            id:           usize,
+            content:      String,
+            completed_at: Option<u64>,
+        }
+        impl PartialEq<Todo> for Record {
+            fn eq(&self, other: &Todo) -> bool {
+                self.content == other.content &&
+                self.completed_at.is_some() == other.completed
+            }
+        }
+        b.DB.prepare("SELECT id, content, completed_at FROM todos WHERE card_id = ?")
+            .bind(&[id.into()])?.all().await?.results::<Record>()?
+    };
+    
+    b.DB.batch({
+        let mut updates = Vec::with_capacity(1);
 
-    b.DB.batch(vec![
-        b.DB.prepare("UPDATE cards SET title = ?1 WHERE id = ?2")
-            .bind(&[title.into(), id.into()])?,
-        b.DB.prepare(format!("DELETE FROM todos WHERE id IN ({})"))
-    ]).await?;
+        if current_title != req.title {
+            updates.push(
+                b.DB.prepare("UPDATE cards SET title = ?1 WHERE id = ?2")
+                    .bind(&[req.title.into(), id.into()])?
+            )
+        }
+
+        for (current, new) in current_todos.into_iter().zip(req.todos) {
+            if current != new {
+                updates.push(b.DB
+                    .prepare("UPDATE todos SET content = ?1, completed_at = ?2 WHERE id = ?3")
+                    .bind(&[
+                        (&new.content).into(),
+                        new.completed.then_some(unix_timestamp() as usize).into(),
+                        current.id.into()
+                    ])?
+                )
+            }
+        }
+
+        updates
+    }).await?;
 
     Ok(())
 }
