@@ -19,7 +19,7 @@ async fn my_worker() -> Ohkami {
     };
 
     Ohkami::with(fangs, (
-        /* `dist` is served by `--assets dist` of `dev` script in package.json */
+        /* in production, `./dist` is served by `--assets dist` of `deploy` script in package.json */
 
         "/signup"
             .POST(signup),

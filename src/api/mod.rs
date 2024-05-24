@@ -70,7 +70,7 @@ pub async fn list_cards(
             .all().await?.results::<Record>()?
     };
 
-    let mut todo_records = {
+    let mut todo_records = if card_records.is_empty() {vec![]} else {
         #[derive(Deserialize)] struct Record {
             card_id:      String,
             content:      String,
@@ -79,15 +79,17 @@ pub async fn list_cards(
         b.DB.prepare(format!(
                 "SELECT card_id, content, completed_at FROM todos
                 WHERE card_id IN ({})
-                ORDER BY CASE card_id {} END, id DESC",
-                /* reversed order to pop later from smaller card_id, id */
-                ["?"; Card::N_TODOS].join(","),
-                array::from_fn::<_, {Card::N_TODOS}, _>(|o| Card::N_TODOS - o)
-                    .map(|rank| format!("WHEN ? THEN {rank}")).join(" ")
+                ORDER BY id DESC", /*
+                    This automatically order by card index in `card_records` DESC
+                    (e.g. by cards.created_at DESC)
+                    due to `create_card`'s behavior
+                */ /*
+                    Here we get todos in reversed order to pop from one
+                    having smaller card_id and id in later proccess
+                */
+                vec!["?"; card_records.len()].join(",")
             ))
-            .bind(&Iterator::chain(card_records.iter(), card_records.iter())
-                .map(|r| (&r.id).into()).collect::<Vec<_>>()
-            )?
+            .bind(&card_records.iter().map(|r| (&r.id).into()).collect::<Vec<_>>())?
             .all().await?.results::<Record>()?
     };
 
@@ -121,7 +123,7 @@ pub async fn update_card(id: &str,
     b.assert_user_is_owner_of_card(&auth.user_id, id).await?;
 
     let current_title = b.DB.prepare("SELECT title FROM cards WHERE id = ?")
-        .bind(&[id.into()])?.first::<String>(Some("id")).await?.unwrap();
+        .bind(&[id.into()])?.first::<String>(Some("title")).await?.unwrap();
 
     let current_todos = {
         #[derive(Deserialize)] struct Record {
@@ -149,14 +151,17 @@ pub async fn update_card(id: &str,
             )
         }
 
+        let statement_update_todo = b.DB.prepare(
+            "UPDATE todos SET content = ?1, completed_at = ?2 WHERE id = ?3"
+        );
         for (current, new) in current_todos.into_iter().zip(req.todos) {
+            use worker::D1Type::{Text, Integer, Null};
             if current != new {
-                updates.push(b.DB
-                    .prepare("UPDATE todos SET content = ?1, completed_at = ?2 WHERE id = ?3")
-                    .bind(&[
-                        (&new.content).into(),
-                        new.completed.then_some(unix_timestamp() as usize).into(),
-                        current.id.into()
+                updates.push(statement_update_todo
+                    .bind_refs(&[
+                        Text(&new.content),
+                        if new.completed {Integer(unix_timestamp() as i32)} else {Null},
+                        Integer(current.id as _)
                     ])?
                 )
             }
