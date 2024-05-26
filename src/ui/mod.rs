@@ -2,9 +2,9 @@ mod fetch;
 mod components;
 
 use fetch::Client;
-use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler, PlaceholderCardInput};
+use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler};
 
-use crate::models::{Card, CreateCardInit, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
+use crate::models::{Card, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
 use yew::prelude::*;
 use yew::suspense::{use_future, Suspense};
 use std::rc::Rc;
@@ -129,18 +129,18 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
     let placeholder_handler = PlaceholderCardHandler {
         on_initial_input: Callback::from({
             let (client, cards) = (client.clone(), cards.clone());
-            move |input: UseStateHandle<PlaceholderCardInput>| wasm_bindgen_futures::spawn_local({
+            move |input: UseStateHandle<CreateCardRequest>| wasm_bindgen_futures::spawn_local({
                 let (client, cards) = (client.clone(), cards.clone());
 
-                let init: CreateCardInit = (&*input).into();
+                let init: CreateCardRequest = (&*input).clone();
 
-                input.set(PlaceholderCardInput::new());
+                input.set(CreateCardRequest::empty());
                 cards.set({let mut cards = (&*cards).clone();
                     cards.push(Card {
                         id:    String::new(),
-                        title: input.title.clone().unwrap_or_default(),
+                        title: input.title.clone(),
                         todos: input.todos.clone().map(|content| Todo {
-                            content:   content.unwrap_or_default(),
+                            content,
                             completed: false,
                         }),
                     });
@@ -148,7 +148,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
 
                 async move {
                     match async {Result::<_, fetch::Error>::Ok(client
-                        .POSTwith(CreateCardRequest { init }, "/api/cards").await?
+                        .POSTwith(init, "/api/cards").await?
                         .json().await?
                     )}.await {
                         Ok(CreateCardResponse { id }) => {

@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use super::atoms::{TextInput, DeleteButton, CheckBoxButton};
-use crate::models::Card;
+use crate::models::{Card, CreateCardRequest};
 
 
 #[derive(Properties, PartialEq)]
@@ -67,43 +67,12 @@ pub struct PlaceholderCardProps {
 
 #[derive(PartialEq, Clone)]
 pub struct PlaceholderCardHandler {
-    pub on_initial_input: Callback<UseStateHandle<PlaceholderCardInput>>,
+    pub on_initial_input: Callback<UseStateHandle<CreateCardRequest>>,
 }
-
-#[derive(PartialEq, Clone)]
-pub struct PlaceholderCardInput {
-    pub title: Option<String>,
-    pub todos: [Option<String>; Card::N_TODOS],
-} const _: () = {
-    impl PlaceholderCardInput {
-        pub fn new() -> Self {
-            PlaceholderCardInput {
-                title: None,
-                todos: [None, None, None, None, None, None, None, None, None, None]
-            }
-        }
-    }
-
-    use crate::models::CreateCardInit;
-    impl Into<CreateCardInit> for &PlaceholderCardInput {
-        fn into(self) -> CreateCardInit {
-            if let Some(title) = &self.title {
-                CreateCardInit::Title(title.clone())
-            } else {
-                let index = self.todos.iter().position(Option::is_some)
-                    .expect("`PlaceholderCardInput` is requested to create new TodoCard while it's empty");
-                CreateCardInit::Todo {
-                    index,
-                    content: self.todos[index].clone().unwrap()
-                }
-            }
-        }
-    }
-};
 
 #[function_component]
 pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
-    let input = use_state(PlaceholderCardInput::new);
+    let input = use_state(CreateCardRequest::empty);
 
     use_effect_with(input.clone(), {
         let handler = props.handler.clone();
@@ -115,12 +84,12 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
             <header class="h-8 space-x-2 flex items-center">
                 <TextInput
                     class="grow h-7 text-neutral-800 text-lg"
-                    value={input.title.clone().unwrap_or_else(String::new)}
+                    value={input.title.clone()}
                     on_input={Callback::from({
                         let input = input.clone();
                         move |value| input.set({
                             let mut new_input = (&*input).clone();
-                            new_input.title = Some(value);
+                            new_input.title = value;
                             new_input
                         })
                     })}
@@ -145,12 +114,12 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
                         />
                         <TextInput
                             class="grow h-6 m-0 p-0"
-                            value={todo.clone().unwrap_or_else(String::new)}
+                            value={todo.clone()}
                             on_input={Callback::from({
                                 let input = input.clone();
                                 move |value| input.set({
                                     let mut new_input = (&*input).clone();
-                                    new_input.todos[i] = Some(value);
+                                    new_input.todos[i] = value;
                                     new_input
                                 })
                             })}

@@ -28,13 +28,19 @@ pub struct SignupResponse {
 }
 
 #[Payload(JSON/SD)]
+#[derive(PartialEq, Clone)]
 pub struct CreateCardRequest {
-    pub init: CreateCardInit,
+    pub title: String,
+    pub todos: [String; Card::N_TODOS],
 }
-#[derive(Serialize, Deserialize)]
-pub enum CreateCardInit {
-    Title(String),
-    Todo { index: usize, content: String },
+#[allow(unused)]
+impl CreateCardRequest {
+    pub fn empty() -> Self {
+        Self {
+            title: String::new(),
+            todos: std::array::from_fn(|_| String::new()),
+        }
+    }
 }
 
 #[Payload(JSON/SD)]

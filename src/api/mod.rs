@@ -39,14 +39,31 @@ pub async fn create_card(
     let id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
         .crypto().unwrap().random_uuid();
 
-    todo!("handle `req`");
-
     b.DB.batch(vec![
-        b.DB.prepare("INSERT INTO cards (id, user_id, created_at) VALUES (?1, ?2, ?3)")
-            .bind(&[(&id).into(), (&auth.user_id).into(), (unix_timestamp() as usize).into()])?,
-        b.DB.prepare(format!("INSERT INTO todos (card_id) VALUES {}", ["(?)"; Card::N_TODOS].join(",")))
-            .bind(&array::from_fn::<_, {Card::N_TODOS}, _>(|_| (&id).into()))?,
-    ]).await?;
+        b.DB.prepare("INSERT INTO cards (id, user_id, title, created_at) VALUES (?1, ?2, ?3, ?4)")
+            .bind(&[
+                (&id).into(),
+                (&auth.user_id).into(),
+                req.title.into(),
+                (unix_timestamp() as usize).into()
+            ])?,
+        b.DB.prepare(format!("INSERT INTO todos (card_id, content) VALUES {}", ["(?,?)"; Card::N_TODOS].join(",")))
+            .bind(&{/* fixme */
+                let [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9] = req.todos;
+                [
+                    (&id).into(), t0.into(),
+                    (&id).into(), t1.into(),
+                    (&id).into(), t2.into(),
+                    (&id).into(), t3.into(),
+                    (&id).into(), t4.into(),
+                    (&id).into(), t5.into(),
+                    (&id).into(), t6.into(),
+                    (&id).into(), t7.into(),
+                    (&id).into(), t8.into(),
+                    (&id).into(), t9.into()
+                ]
+            })?,
+        ]).await?;
 
     Ok(status::Created(CreateCardResponse { id }))
 }
