@@ -28,6 +28,21 @@ pub struct SignupResponse {
 }
 
 #[Payload(JSON/SD)]
+pub struct CreateCardRequest {
+    pub init: CreateCardInit,
+}
+#[derive(Serialize, Deserialize)]
+pub enum CreateCardInit {
+    Title(String),
+    Todo { index: usize, content: String },
+}
+
+#[Payload(JSON/SD)]
+pub struct CreateCardResponse {
+    pub id: String,
+}
+
+#[Payload(JSON/SD)]
 pub struct UpdateCard {
     pub title: String,
     pub todos: [Todo; Card::N_TODOS],

@@ -5,7 +5,7 @@ pub mod utils;
 use self::jwt::JWTPayload;
 use self::errors::ServerError;
 use crate::Bindings;
-use crate::models::{Card, SignupResponse, Todo, UpdateCard};
+use crate::models::{Card, CreateCardRequest, CreateCardResponse, SignupResponse, Todo, UpdateCard};
 use web_sys::{wasm_bindgen::JsCast, WorkerGlobalScope, js_sys};
 use ohkami::typed::status;
 use ohkami::serde::Deserialize;
@@ -34,9 +34,12 @@ pub async fn signup(
 pub async fn create_card(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-) -> Result<status::Created<Card>, ServerError> {
+    req:  CreateCardRequest
+) -> Result<status::Created<CreateCardResponse>, ServerError> {
     let id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
         .crypto().unwrap().random_uuid();
+
+    todo!("handle `req`");
 
     b.DB.batch(vec![
         b.DB.prepare("INSERT INTO cards (id, user_id, created_at) VALUES (?1, ?2, ?3)")
@@ -45,14 +48,7 @@ pub async fn create_card(
             .bind(&array::from_fn::<_, {Card::N_TODOS}, _>(|_| (&id).into()))?,
     ]).await?;
 
-    Ok(status::Created(Card {
-        id,
-        title: String::new(),
-        todos: [(); Card::N_TODOS].map(|_| Todo {
-            content:   String::new(),
-            completed: false,
-        }),
-    }))
+    Ok(status::Created(CreateCardResponse { id }))
 }
 
 #[worker::send]

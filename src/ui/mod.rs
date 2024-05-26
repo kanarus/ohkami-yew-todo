@@ -2,9 +2,9 @@ mod fetch;
 mod components;
 
 use fetch::Client;
-use components::{CheckBoxButton, DeleteButton, TextInput};
+use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler, PlaceholderCardInput};
 
-use crate::models::{Card, UpdateCard};
+use crate::models::{Card, CreateCardInit, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
 use yew::prelude::*;
 use yew::suspense::{use_future, Suspense};
 use std::rc::Rc;
@@ -68,7 +68,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         web_sys::window().unwrap().alert_with_message("Failed to fetch your TODOs").unwrap();
     }
 
-    let handlers = (0..cards.len()).map(|i| TodoCardHandler {
+    let todo_handlers = (0..cards.len()).map(|i| TodoCardHandler {
         on_request_save: Callback::from({
             let (client, cards) = (client.clone(), cards.clone());
             move |_| wasm_bindgen_futures::spawn_local({
@@ -126,69 +126,60 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         })),
     });
 
+    let placeholder_handler = PlaceholderCardHandler {
+        on_initial_input: Callback::from({
+            let (client, cards) = (client.clone(), cards.clone());
+            move |input: UseStateHandle<PlaceholderCardInput>| wasm_bindgen_futures::spawn_local({
+                let (client, cards) = (client.clone(), cards.clone());
+
+                let init: CreateCardInit = (&*input).into();
+
+                input.set(PlaceholderCardInput::new());
+                cards.set({let mut cards = (&*cards).clone();
+                    cards.push(Card {
+                        id:    String::new(),
+                        title: input.title.clone().unwrap_or_default(),
+                        todos: input.todos.clone().map(|content| Todo {
+                            content:   content.unwrap_or_default(),
+                            completed: false,
+                        }),
+                    });
+                cards});
+
+                async move {
+                    match async {Result::<_, fetch::Error>::Ok(client
+                        .POSTwith(CreateCardRequest { init }, "/api/cards").await?
+                        .json().await?
+                    )}.await {
+                        Ok(CreateCardResponse { id }) => {
+                            cards.set({let mut cards = (&*cards).clone();
+                                cards.last_mut().unwrap().id = id;
+                            cards});
+                        }
+                        Err(_) => {
+                            cards.set({let mut cards = (&*cards).clone();
+                                let _ = cards.pop();
+                            cards});
+
+                            web_sys::window().unwrap().alert_with_message("Failed to create TODO card").unwrap();
+                        }
+                    }
+                }
+            })
+        }),
+    };
+
     Ok(html! {
-        for cards.iter().cloned().zip(handlers).map(|(card, handler)| html! {
-            <TodoCard
-                bind={card}
-                handler={handler}
+        <div>
+            {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {
+                <TodoCard
+                    bind={card}
+                    handler={handler}
+                />
+            })}
+            <PlaceholderCard
+                handler={placeholder_handler}
             />
-        })
-    })
-}
-
-
-#[derive(Properties, PartialEq)]
-struct TodoCardProps {
-    bind:    Card,
-    handler: TodoCardHandler,
-}
-
-#[derive(PartialEq)]
-struct TodoCardHandler {
-    on_request_save:  Callback<()>,
-    on_click_delete:  Callback<()>,
-    on_edit_title:    Callback<String>,
-    on_check_todo_by: [Callback<()>; Card::N_TODOS],
-    on_edit_todo_by:  [Callback<String>; Card::N_TODOS],
-}
-
-#[function_component]
-fn TodoCard(props: &TodoCardProps) -> Html {
-    html!(
-        <div
-            class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2"
-            onblur={props.handler.on_request_save.reform(|_: FocusEvent| ())}
-        >
-            <header class="h-8 space-x-2 flex items-center">
-                <TextInput
-                    class="grow h-7 text-neutral-800 text-lg"
-                    value={props.bind.title.clone()}
-                    on_input={props.handler.on_edit_title.clone()}
-                />
-                <DeleteButton
-                    class="basis-4 h-6"
-                    on_click={props.handler.on_click_delete.clone()}
-                />
-            </header>
-
-            <hr class="border-neutral-400"/>
-
-            <ul>{for props.bind.todos.iter().enumerate().map(|(i, todo)| html!(
-                <li class="list-none flex items-center space-x-2">
-                    <div class={if todo.completed {"text-neutral-400"} else {"text-neutral-800"}}>
-                        <CheckBoxButton
-                            class="basis-4 h-6"
-                            checked={todo.completed}
-                            on_click={props.handler.on_check_todo_by[i].clone()}
-                        />
-                        <TextInput
-                            class="grow h-6 m-0 p-0"
-                            value={todo.content.clone()}
-                            on_input={props.handler.on_edit_todo_by[i].clone()}
-                        />
-                    </div>
-                </li>
-            ))}</ul>
         </div>
-    )
+    })
 }
