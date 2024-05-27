@@ -30,8 +30,9 @@ pub fn App() -> Html {
 
 #[function_component]
 fn Main() -> HtmlResult {
-    let Ok(ref client) = *use_future(|| async {Client::new().await.map(Rc::new)})? else {
-        return Ok(html!(<p>{format!("Can't perform sign up")}</p>))
+    let client = match &*use_future(|| async {Client::new().await.map(Rc::new)})? {
+        Ok(client) => client.clone(),
+        Err(err)   => return Ok(html!(<p>{format!("Can't perform signup: {err}")}</p>))
     };
 
     Ok(html!(
@@ -173,8 +174,8 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         <div class="
             relative
             m-0
-            overflow-x-scroll
-            flex
+            overflow-x-scroll overflow-y-hidden
+            flex flex-none
         ">
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {
                 <TodoCard

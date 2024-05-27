@@ -34,7 +34,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                 <header
                     class="h-8 space-x-2 flex items-center"
                 >
-                    <TextInput class="grow h-7 text-neutral-800 text-lg"
+                    <TextInput class="grow h-7 text-neutral-800 text-lg w-full h-full "
                         value={props.title.clone()}
                         on_input={props.on_edit_title.clone()}
                     />
@@ -67,11 +67,10 @@ pub struct TodoLayoutProps {
 #[function_component]
 pub fn TodoLayout(props: &TodoLayoutProps) -> Html {
     html!(
-        <ul>{for props.todos.iter().enumerate().map(|(i, todo)| html!(
+        <ul class="m-0 p-0">{for props.todos.iter().enumerate().map(|(i, todo)| html!(
             <li class="list-none flex items-center space-x-2">
-                <div class={if todo.completed {"text-neutral-400"} else {"text-neutral-800"}}>
                     <CheckBoxButton
-                        class="basis-4 h-6"
+                        class="basis-4 h-6 cursor-pointer"
                         checked={todo.completed}
                         disabled={!props.checkable}
                         on_click={props.checkable.then(|| props.on_check_todo[i].clone()).unwrap_or_default()}
@@ -79,9 +78,9 @@ pub fn TodoLayout(props: &TodoLayoutProps) -> Html {
                     <TextInput
                         class="grow h-6 m-0 p-0"
                         value={todo.content.clone()}
+                        disabled={todo.completed}
                         on_input={props.on_edit_todo[i].clone()}
                     />
-                </div>
             </li>
         ))}</ul>
     )

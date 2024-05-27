@@ -67,7 +67,9 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
 
     use_effect_with(input.clone(), {
         let handler = props.handler.clone();
-        move |input| handler.on_initial_input.emit(input.clone())
+        move |input| if !input.is_empty() {
+            handler.on_initial_input.emit(input.clone())
+        }
     });
 
     html!(

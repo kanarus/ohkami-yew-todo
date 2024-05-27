@@ -19,7 +19,7 @@ impl Client {
             let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
             local_storage.get(Self::TOKEN_STORAGE_KEY).unwrap().unwrap_or({
                 let SignupResponse { token } = reqwest::Client::new()
-                    .post("/signup").send().await?.json().await?;
+                    .post(format!("{}/signup", Self::ORIGIN)).send().await?.json().await?;
                 local_storage.set(Self::TOKEN_STORAGE_KEY, &token).unwrap();
                 token.into()
             })
@@ -27,7 +27,7 @@ impl Client {
 
         let client = reqwest::ClientBuilder::new()
             .default_headers(FromIterator::from_iter([(
-                "Authorization".try_into().unwrap(),
+                "authorization".try_into().unwrap(),
                 format!("Bearer {token}").try_into().unwrap()
             )]))
             .build().unwrap();

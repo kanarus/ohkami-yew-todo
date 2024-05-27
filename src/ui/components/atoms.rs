@@ -63,12 +63,14 @@ pub struct TextInputProps {
     pub on_input: Callback<String>,
 
     #[prop_or("")]
-    pub class: &'static str,
+    pub class:    &'static str,
+    #[prop_or(false)]
+    pub disabled: bool,
 }
 
 #[function_component]
 pub fn TextInput(props: &TextInputProps) -> Html {
-    let TextInputProps { class, value, on_input } = props;
+    let TextInputProps { class, value, on_input, disabled } = props;
 
     let on_input = on_input.reform(|e: Event| {
         use web_sys::{HtmlTextAreaElement, wasm_bindgen::JsCast};
@@ -77,13 +79,15 @@ pub fn TextInput(props: &TextInputProps) -> Html {
 
     html!(
         <div class={*class}>
-            <textarea
-                class="resize-none border-none w-full h-full outline-none bg-inherit"
-                autocomplete="off"
-                spellcheck="false"
-                value={value.clone()}
-                onchange={on_input}
-            />
+            <div class={if *disabled {"text-neutral-400"} else {"text-neutral-800"}}>
+                <textarea
+                    class="resize-none border-none w-full h-full outline-none bg-inherit"
+                    autocomplete="off"
+                    spellcheck="false"
+                    value={value.clone()}
+                    onchange={on_input}
+                />
+            </div>
         </div>
     )
 }

@@ -41,6 +41,10 @@ impl CreateCardRequest {
             todos: std::array::from_fn(|_| String::new()),
         }
     }
+    pub fn is_empty(&self) -> bool {
+        self.title.is_empty() &&
+        self.todos.iter().all(String::is_empty)
+    }
 }
 
 #[Payload(JSON/SD)]
