@@ -1,12 +1,17 @@
 use yew::prelude::*;
-use super::atoms::{TextInput, DeleteButton, CheckBoxButton};
-use crate::models::{Card, CreateCardRequest};
+use super::atoms::DeleteButton;
+use super::layouts::{CardLayout, TodoLayout};
+use crate::models::{Card, CreateCardRequest, Todo};
+
 
 
 #[derive(Properties, PartialEq)]
 pub struct TodoCardProps {
     pub bind:    Card,
     pub handler: TodoCardHandler,
+
+    #[prop_or("")]
+    pub class: &'static str,
 }
 
 #[derive(PartialEq)]
@@ -21,41 +26,24 @@ pub struct TodoCardHandler {
 #[function_component]
 pub fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
-        <div
-            class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2"
-            onblur={props.handler.on_request_save.reform(|_: FocusEvent| ())}
-        >
-            <header class="h-8 space-x-2 flex items-center">
-                <TextInput
-                    class="grow h-7 text-neutral-800 text-lg"
-                    value={props.bind.title.clone()}
-                    on_input={props.handler.on_edit_title.clone()}
-                />
+        <CardLayout
+            class={props.class}
+            title={props.bind.title.clone()}
+            on_edit_title={props.handler.on_edit_title.clone()}
+            on_blur={props.handler.on_request_save.clone()}
+            toolbox={html!(
                 <DeleteButton
-                    class="basis-4 h-6"
                     on_click={props.handler.on_click_delete.clone()}
                 />
-            </header>
-
-            <hr class="border-neutral-400"/>
-
-            <ul>{for props.bind.todos.iter().enumerate().map(|(i, todo)| html!(
-                <li class="list-none flex items-center space-x-2">
-                    <div class={if todo.completed {"text-neutral-400"} else {"text-neutral-800"}}>
-                        <CheckBoxButton
-                            class="basis-4 h-6"
-                            checked={todo.completed}
-                            on_click={props.handler.on_check_todo_by[i].clone()}
-                        />
-                        <TextInput
-                            class="grow h-6 m-0 p-0"
-                            value={todo.content.clone()}
-                            on_input={props.handler.on_edit_todo_by[i].clone()}
-                        />
-                    </div>
-                </li>
-            ))}</ul>
-        </div>
+            )}
+            contents={html!(
+                <TodoLayout
+                    todos={props.bind.todos.clone()}
+                    on_check_todo={props.handler.on_check_todo_by.clone()}
+                    on_edit_todo={props.handler.on_edit_todo_by.clone()}
+                />
+            )}
+        />
     )
 }
 
@@ -63,6 +51,9 @@ pub fn TodoCard(props: &TodoCardProps) -> Html {
 #[derive(Properties, PartialEq)]
 pub struct PlaceholderCardProps {
     pub handler: PlaceholderCardHandler,
+
+    #[prop_or("")]
+    pub class: &'static str,
 }
 
 #[derive(PartialEq, Clone)]
@@ -80,53 +71,36 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
     });
 
     html!(
-        <div class="bg-neutral-100 rounded-lg rounded-tr-none border border-solid border-neutral-300 shadow-lg shadow-neutral-300 p-2 m-2">
-            <header class="h-8 space-x-2 flex items-center">
-                <TextInput
-                    class="grow h-7 text-neutral-800 text-lg"
-                    value={input.title.clone()}
-                    on_input={Callback::from({
+        <CardLayout
+            class={props.class}
+            title={input.title.clone()}
+            on_edit_title={Callback::from({
+                let input = input.clone();
+                move |value| input.set({
+                    let mut input = (&*input).clone();
+                    input.title = value;
+                    input
+                })
+            })}
+            toolbox={html!(
+                <DeleteButton
+                    disabled={true}
+                />
+            )}
+            contents={html!(
+                <TodoLayout
+                    checkable={false}
+                    todos={input.todos.clone().map(|content| Todo { content, completed: false })}
+                    on_edit_todo={std::array::from_fn(|i| Callback::from({
                         let input = input.clone();
                         move |value| input.set({
-                            let mut new_input = (&*input).clone();
-                            new_input.title = value;
-                            new_input
+                            let mut input = (&*input).clone();
+                            input.todos[i] = value;
+                            input
                         })
-                    })}
+                    }))}
                 />
-                <DeleteButton
-                    class="basis-4 h-6"
-                    disabled={true}
-                    on_click={Callback::noop()}
-                />
-            </header>
-
-            <hr class="border-neutral-400"/>
-
-            <ul>{for input.todos.iter().enumerate().map(|(i, todo)| html!(
-                <li class="list-none flex items-center space-x-2">
-                    <div class={"text-neutral-800"}>
-                        <CheckBoxButton
-                            class="basis-4 h-6"
-                            checked={false}
-                            disabled={true}
-                            on_click={Callback::noop()}
-                        />
-                        <TextInput
-                            class="grow h-6 m-0 p-0"
-                            value={todo.clone()}
-                            on_input={Callback::from({
-                                let input = input.clone();
-                                move |value| input.set({
-                                    let mut new_input = (&*input).clone();
-                                    new_input.todos[i] = value;
-                                    new_input
-                                })
-                            })}
-                        />
-                    </div>
-                </li>
-            ))}</ul>
-        </div>
+            )}
+        />
     )
 }

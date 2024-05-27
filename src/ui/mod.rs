@@ -170,7 +170,12 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
     };
 
     Ok(html! {
-        <div>
+        <div class="
+            relative
+            m-0
+            overflow-x-scroll
+            flex
+        ">
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {
                 <TodoCard
                     bind={card}

@@ -48,21 +48,9 @@ pub async fn create_card(
                 (unix_timestamp() as usize).into()
             ])?,
         b.DB.prepare(format!("INSERT INTO todos (card_id, content) VALUES {}", ["(?,?)"; Card::N_TODOS].join(",")))
-            .bind(&{/* fixme */
-                let [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9] = req.todos;
-                [
-                    (&id).into(), t0.into(),
-                    (&id).into(), t1.into(),
-                    (&id).into(), t2.into(),
-                    (&id).into(), t3.into(),
-                    (&id).into(), t4.into(),
-                    (&id).into(), t5.into(),
-                    (&id).into(), t6.into(),
-                    (&id).into(), t7.into(),
-                    (&id).into(), t8.into(),
-                    (&id).into(), t9.into()
-                ]
-            })?,
+            .bind(array::from_fn::<_, {Card::N_TODOS * 2}, _>(|i|
+                if i%2==0 {(&id).into()} else {(&req.todos[i/2]).into()}
+            ).as_slice())?,
         ]).await?;
 
     Ok(status::Created(CreateCardResponse { id }))

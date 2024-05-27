@@ -3,6 +3,7 @@ use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct DeleteButtonProps {
+    #[prop_or_else(|| Callback::noop())]
     pub on_click: Callback<()>,
 
     #[prop_or("")]
