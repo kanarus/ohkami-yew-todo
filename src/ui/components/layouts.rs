@@ -11,10 +11,10 @@ pub struct CardLayoutProps {
 
     #[prop_or("")]
     pub class:         &'static str,
-    #[prop_or_else(Callback::noop)]
-    pub on_edit_title: Callback<String>,
-    #[prop_or_else(Callback::noop)]
-    pub on_blur:       Callback<()>,
+    #[prop_or(None)]
+    pub on_edit_title: Option<Callback<String>>,
+    #[prop_or(None)]
+    pub on_blur:       Option<Callback<()>>,
 }
 
 #[function_component]
@@ -29,7 +29,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                     shadow-lg shadow-neutral-300
                     p-2 m-2
                 "
-                onblur={props.on_blur.reform(|_| ())}
+                onblur={props.on_blur.as_ref().map(|h| h.reform(|_| ()))}
             >
                 <header
                     class="h-8 space-x-2 flex items-center"

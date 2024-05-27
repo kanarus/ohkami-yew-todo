@@ -106,3 +106,20 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
         />
     )
 }
+
+
+#[function_component]
+pub fn FrontCoverCard() -> Html {
+    html!(
+        <CardLayout
+            title={String::from("Note")}
+            toolbox={/* empty */}
+            contents={html!(
+                <ul class="m-0 p-0">
+                    <li>{"デモなので、適当にユーザーIDを発行して永久トークンをlocalStorageに保存し、それをもってユーザーを識別しています。"}</li>
+                    <li>{"念のため、知られてはいけない情報は入力しないことをおすすめします。"}</li>
+                </ul>
+            )}
+        />
+    )
+}

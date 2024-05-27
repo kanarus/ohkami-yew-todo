@@ -2,7 +2,7 @@ mod fetch;
 mod components;
 
 use fetch::Client;
-use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler};
+use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler, FrontCoverCard};
 
 use crate::models::{Card, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
 use yew::prelude::*;
@@ -177,6 +177,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
             overflow-x-scroll overflow-y-hidden
             flex flex-none
         ">
+            <FrontCoverCard />
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {
                 <TodoCard
                     bind={card}

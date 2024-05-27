@@ -60,7 +60,9 @@ pub fn CheckBoxButton(props: &CheckBoxButtonProps) -> Html {
 #[derive(Properties, PartialEq)]
 pub struct TextInputProps {
     pub value:    String,
-    pub on_input: Callback<String>,
+
+    #[prop_or(None)]
+    pub on_input: Option<Callback<String>>,
 
     #[prop_or("")]
     pub class:    &'static str,
@@ -72,7 +74,7 @@ pub struct TextInputProps {
 pub fn TextInput(props: &TextInputProps) -> Html {
     let TextInputProps { class, value, on_input, disabled } = props;
 
-    let on_input = on_input.reform(|e: Event| {
+    let on_edit = on_input.clone().unwrap_or_else(Callback::noop).reform(|e: Event| {
         use web_sys::{HtmlTextAreaElement, wasm_bindgen::JsCast};
         e.target().unwrap().dyn_into::<HtmlTextAreaElement>().unwrap().value()
     });
@@ -84,8 +86,9 @@ pub fn TextInput(props: &TextInputProps) -> Html {
                     class="resize-none border-none w-full h-full outline-none bg-inherit"
                     autocomplete="off"
                     spellcheck="false"
+                    disabled={on_input.is_none()}
                     value={value.clone()}
-                    onchange={on_input}
+                    onchange={on_edit}
                 />
             </div>
         </div>
