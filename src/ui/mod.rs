@@ -167,7 +167,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         <div class="
             mx-0 px-6 space-x-4
             overflow-x-scroll overflow-y-hidden
-            flex 
+            flex relative
         ">
             <FrontCoverCard />
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {

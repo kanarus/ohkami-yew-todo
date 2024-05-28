@@ -24,7 +24,6 @@ pub struct TodoCardHandler {
 pub fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
         <CardLayout
-            class="todo-card"
             title={props.bind.title.clone()}
             on_edit_title={props.handler.on_edit_title.clone()}
             on_blur={props.handler.on_request_save.clone()}

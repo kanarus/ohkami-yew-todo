@@ -1,5 +1,3 @@
--- Cloudflare D1; SQLite3
-
 CREATE TABLE IF NOT EXISTS users (
     id TEXT NOT NULL, -- uuid v4
 

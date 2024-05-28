@@ -9,8 +9,6 @@ pub struct CardLayoutProps {
     pub toolbox:  Html,
     pub contents: Html,
 
-    #[prop_or("")]
-    pub class:         &'static str,
     #[prop_or(None)]
     pub on_edit_title: Option<Callback<String>>,
     #[prop_or(None)]
@@ -20,35 +18,33 @@ pub struct CardLayoutProps {
 #[function_component]
 pub fn CardLayout(props: &CardLayoutProps) -> Html {
     html!(
-        <div class={props.class}>
-            <div
-                class="
-                    bg-neutral-100
-                    rounded-lg rounded-tr-none
-                    border border-solid border-neutral-300
-                    shadow-lg shadow-neutral-300
-                    px-4 py-2 my-4
-                    min-w-64 h-96
-                "
-                onfocusout={props.on_blur.as_ref().map(|h| h.reform(|_| ()))}
+        <div
+            class="
+                bg-neutral-100
+                rounded-lg rounded-tr-none
+                border border-solid border-neutral-300
+                shadow-lg shadow-neutral-300
+                px-4 py-2 my-4
+                h-96 w-72 min-w-72
+            "
+            onfocusout={props.on_blur.as_ref().map(|h| h.reform(|_| ()))}
+        >
+            <header
+                class="h-8 space-x-2 flex items-center"
             >
-                <header
-                    class="h-8 space-x-2 flex items-center"
-                >
-                    <TextInput title={true}
-                        class="grow h-7 w-full h-full"
-                        value={props.title.clone()}
-                        on_input={props.on_edit_title.clone()}
-                    />
-                    <div class="basis-4 h-6">
-                        {props.toolbox.clone()}
-                    </div>
-                </header>
+                <TextInput title={true}
+                    class="grow h-7 w-full h-full"
+                    value={props.title.clone()}
+                    on_input={props.on_edit_title.clone()}
+                />
+                <div class="basis-4 h-6">
+                    {props.toolbox.clone()}
+                </div>
+            </header>
 
-                <hr class="border-neutral-400"/>
+            <hr class="border-neutral-400"/>
 
-                {props.contents.clone()}
-            </div>
+            {props.contents.clone()}
         </div>
     )
 }
