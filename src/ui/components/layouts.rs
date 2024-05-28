@@ -65,19 +65,25 @@ pub struct TodoLayoutProps {
 #[function_component]
 pub fn TodoLayout(props: &TodoLayoutProps) -> Html {
     html!(
-        <ul class="mx-0 my-3 p-0 space-y-2">{for props.todos.iter().enumerate().map(|(i, todo)| html!(
-            <li class="list-none flex items-center space-x-2">
-                <CheckBoxButton
-                    class="basis-4 h-6"
-                    checked={todo.completed}
-                    on_click={props.checkable.then(|| props.on_check_todo[i].clone())}
-                />
-                <TextInput
-                    class="grow h-6 m-0 p-0"
-                    value={todo.content.clone()}
-                    on_input={(!todo.completed).then(|| props.on_edit_todo[i].clone())}
-                />
-            </li>
-        ))}</ul>
+        <ul class="mx-0 my-3 p-0 space-y-2">
+            {for props.todos.iter().enumerate().map(|(i, todo)| html!(
+                <li class="list-none flex items-center space-x-2">
+                    <CheckBoxButton
+                        class="basis-4 h-6"
+                        checked={todo.completed}
+                        on_click={(
+                            props.checkable &&
+                            (! todo.content.is_empty()) &&
+                            (! todo.completed)
+                        ).then(|| props.on_check_todo[i].clone())}
+                    />
+                    <TextInput
+                        class="grow h-6 m-0 p-0"
+                        value={todo.content.clone()}
+                        on_input={(!todo.completed).then(|| props.on_edit_todo[i].clone())}
+                    />
+                </li>
+            ))}
+        </ul>
     )
 }
