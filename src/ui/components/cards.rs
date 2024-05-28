@@ -104,8 +104,9 @@ pub fn FrontCoverCard() -> Html {
             toolbox={/* empty */}
             contents={html!(
                 <ul class="m-0">
-                    <li>{"デモなので、適当に永久トークンを発行してlocalStorageに保存し、それをもってユーザーを識別しています。"}</li>
-                    <li>{"知られてはいけない情報は入力しないことをおすすめします。"}</li>
+                    <li>{"自動的に永久トークンを発行してlocalStorageに保存し、それをもってユーザーを識別しています。"}</li>
+                    <li>{"念のため、知られてはいけない情報は入力しないことをおすすめします。"}</li>
+                    <li>{"repository: "}<a href="https://github.com/kana-rus/ohkami-yew-todo">{"https://github.com/kana-rus/ohkami-yew-todo"}</a></li>
                 </ul>
             )}
         />
