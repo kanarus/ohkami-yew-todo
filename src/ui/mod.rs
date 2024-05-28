@@ -12,20 +12,22 @@ use std::rc::Rc;
 
 #[function_component]
 pub fn App() -> Html {
-    html! {
+    html! (
         <>
             <header>
                 <h1 class="w-full text-center text-neutral-800 underline underline-offset-8">
-                    {"Ohkami*Yew TODO Demo"}
+                {"Ohkami*Yew TODO Demo"}
                 </h1>
             </header>
-            <main>
-                <Suspense fallback={html!(<p>{"Loading..."}</p>)}>
-                    <Main />
-                </Suspense>
+            <main class="flex flex-col items-center">
+                <div class="max-w-screen-lg">
+                    <Suspense fallback={html!(<p>{"Loading..."}</p>)}>
+                        <Main />
+                    </Suspense>
+                </div>
             </main>
         </>
-    }
+    )
 }
 
 #[function_component]
@@ -172,10 +174,8 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
 
     Ok(html! {
         <div class="
-            relative
-            m-0
-            overflow-x-scroll overflow-y-hidden
-            flex flex-none
+            m-0 space-y-4
+            overflow-y-scroll overflow-x-hidden
         ">
             <FrontCoverCard />
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {

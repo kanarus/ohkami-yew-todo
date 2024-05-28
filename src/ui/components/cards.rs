@@ -9,9 +9,6 @@ use crate::models::{Card, CreateCardRequest, Todo};
 pub struct TodoCardProps {
     pub bind:    Card,
     pub handler: TodoCardHandler,
-
-    #[prop_or("")]
-    pub class: &'static str,
 }
 
 #[derive(PartialEq)]
@@ -27,7 +24,6 @@ pub struct TodoCardHandler {
 pub fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
         <CardLayout
-            class={props.class}
             title={props.bind.title.clone()}
             on_edit_title={props.handler.on_edit_title.clone()}
             on_blur={props.handler.on_request_save.clone()}
@@ -51,9 +47,6 @@ pub fn TodoCard(props: &TodoCardProps) -> Html {
 #[derive(Properties, PartialEq)]
 pub struct PlaceholderCardProps {
     pub handler: PlaceholderCardHandler,
-
-    #[prop_or("")]
-    pub class: &'static str,
 }
 
 #[derive(PartialEq, Clone)]
@@ -74,7 +67,6 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
 
     html!(
         <CardLayout
-            class={props.class}
             title={input.title.clone()}
             on_edit_title={Callback::from({
                 let input = input.clone();
@@ -115,8 +107,8 @@ pub fn FrontCoverCard() -> Html {
             title={String::from("Note")}
             toolbox={/* empty */}
             contents={html!(
-                <ul class="m-0 p-0">
-                    <li>{"デモなので、適当にユーザーIDを発行して永久トークンをlocalStorageに保存し、それをもってユーザーを識別しています。"}</li>
+                <ul class="m-0">
+                    <li>{"デモなので、適当に永久トークンを発行してlocalStorageに保存し、それをもってユーザーを識別しています。"}</li>
                     <li>{"念のため、知られてはいけない情報は入力しないことをおすすめします。"}</li>
                 </ul>
             )}

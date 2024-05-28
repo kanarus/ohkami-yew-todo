@@ -17,17 +17,21 @@ impl Client {
     pub async fn new() -> Result<Self, Error> {
         let token = {
             let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-            local_storage.get(Self::TOKEN_STORAGE_KEY).unwrap().unwrap_or({
-                let SignupResponse { token } = reqwest::Client::new()
-                    .post(format!("{}/signup", Self::ORIGIN)).send().await?.json().await?;
-                local_storage.set(Self::TOKEN_STORAGE_KEY, &token).unwrap();
-                token.into()
-            })
+
+            match local_storage.get(Self::TOKEN_STORAGE_KEY).unwrap() {
+                Some(token) => token,
+                None => {
+                    let SignupResponse { token } = reqwest::Client::new()
+                        .post(format!("{}/signup", Self::ORIGIN)).send().await?.json().await?;
+                    local_storage.set(Self::TOKEN_STORAGE_KEY, &token).unwrap();
+                    token.into()
+                }
+            }
         };
 
         let client = reqwest::ClientBuilder::new()
             .default_headers(FromIterator::from_iter([(
-                "authorization".try_into().unwrap(),
+                "Authorization".try_into().unwrap(),
                 format!("Bearer {token}").try_into().unwrap()
             )]))
             .build().unwrap();

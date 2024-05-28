@@ -64,15 +64,15 @@ pub struct TextInputProps {
     #[prop_or(None)]
     pub on_input: Option<Callback<String>>,
 
-    #[prop_or("")]
-    pub class:    &'static str,
     #[prop_or(false)]
-    pub disabled: bool,
+    pub title:    bool,
+    #[prop_or("")]
+    pub class: &'static str,
 }
 
 #[function_component]
 pub fn TextInput(props: &TextInputProps) -> Html {
-    let TextInputProps { class, value, on_input, disabled } = props;
+    let TextInputProps { value, on_input, title, class } = props;
 
     let on_edit = on_input.clone().unwrap_or_else(Callback::noop).reform(|e: Event| {
         use web_sys::{HtmlTextAreaElement, wasm_bindgen::JsCast};
@@ -81,16 +81,18 @@ pub fn TextInput(props: &TextInputProps) -> Html {
 
     html!(
         <div class={*class}>
-            <div class={if *disabled {"text-neutral-400"} else {"text-neutral-800"}}>
-                <textarea
-                    class="resize-none border-none w-full h-full outline-none bg-inherit"
-                    autocomplete="off"
-                    spellcheck="false"
-                    disabled={on_input.is_none()}
-                    value={value.clone()}
-                    onchange={on_edit}
-                />
-            </div>
+            <input
+                class={if *title {
+                    "text-lg | text-neutral-800 resize-none border-none w-full h-full outline-none bg-inherit"
+                } else {
+                    "text-neutral-800 resize-none border-none w-full h-full outline-none bg-inherit"
+                }}
+                autocomplete="off"
+                spellcheck="false"
+                disabled={on_input.is_none()}
+                value={value.clone()}
+                onchange={on_edit}
+            />
         </div>
     )
 }
