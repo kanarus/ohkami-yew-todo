@@ -13,20 +13,20 @@ use std::rc::Rc;
 #[function_component]
 pub fn App() -> Html {
     html! (
-        <>
-            // <header>
-            //     <h1 class="w-full text-center text-neutral-800 underline underline-offset-8">
-            //     {"Ohkami*Yew TODO Demo"}
-            //     </h1>
-            // </header>
-            <main class="flex flex-col items-center">
-                <div class="max-w-screen-lg">
+        <main class="h-screen flex flex-col">
+            <header class="basis-20">
+                <h1 class="mb-0 mx-0 w-full text-center text-neutral-800 underline underline-offset-8">
+                    {"Ohkami*Yew TODO Demo"}
+                </h1>
+            </header>
+            <div class="grow flex items-center">
+                <div class="overflow-hidden">
                     <Suspense fallback={html!(<p>{"Loading..."}</p>)}>
                         <Main />
                     </Suspense>
                 </div>
-            </main>
-        </>
+            </div>
+        </main>
     )
 }
 
@@ -131,59 +131,43 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
     let placeholder_handler = PlaceholderCardHandler {
         on_initial_input: Callback::from({
             let (client, cards) = (client.clone(), cards.clone());
-            move |input: UseStateHandle<CreateCardRequest>| {
-                let init: CreateCardRequest = (&*input).clone();
-
-                input.set(CreateCardRequest::empty());
-                cards.set({let mut cards = (&*cards).clone();
-                    cards.push(Card {
-                        id:    String::new(),
-                        title: init.title.clone(),
-                        todos: init.todos.clone().map(|content| Todo {
-                            content,
-                            completed: false,
-                        }),
-                    });
-                cards});
-
-                wasm_bindgen_futures::spawn_local({
-                    let (client, cards) = (client.clone(), cards.clone());
-                    async move {
-                        match async {Result::<_, fetch::Error>::Ok(client
-                            .POSTwith(init, "/api/cards").await?
-                            .json().await?
-                        )}.await {
-                            Ok(CreateCardResponse { id }) => {
-                                cards.set({let mut cards = (&*cards).clone();
-                                    cards.last_mut().unwrap().id = id;
-                                cards});
-                            }
-                            Err(_) => {
-                                cards.set({let mut cards = (&*cards).clone();
-                                    let _ = cards.pop();
-                                cards});
-
-                                web_sys::window().unwrap().alert_with_message("Failed to create TODO card").unwrap();
-                            }
+            move |input: UseStateHandle<CreateCardRequest>| wasm_bindgen_futures::spawn_local({
+                let (client, cards) = (client.clone(), cards.clone());
+                async move {
+                    match async {Result::<_, fetch::Error>::Ok(client
+                        .POSTwith((&*input).clone(), "/api/cards").await?
+                        .json().await?
+                    )}.await {
+                        Ok(CreateCardResponse { id }) => {
+                            input.set(CreateCardRequest::empty());
+                            cards.set({let mut cards = (&*cards).clone();
+                                cards.push(Card {
+                                    id,
+                                    title: input.title.clone(),
+                                    todos: input.todos.clone().map(|content| Todo {
+                                        content,
+                                        completed: false,
+                                    }),
+                                });
+                            cards});
                         }
-
-                        // {use web_sys::{HtmlElement, wasm_bindgen::JsCast};
-                        //     let todo_cards = web_sys::window().unwrap().document().unwrap()
-                        //         .get_elements_by_class_name("todo-card");
-                        //     todo_cards.item(todo_cards.length() - 1).unwrap()
-                        //         .dyn_into::<HtmlElement>().unwrap()
-                        //         .focus().unwrap();
-                        // }
+                        Err(_) => {
+                            cards.set({let mut cards = (&*cards).clone();
+                                let _ = cards.pop();
+                            cards});
+                            web_sys::window().unwrap().alert_with_message("Failed to create TODO card").unwrap();
+                        }
                     }
-                })
-            }
+                }
+            })
         }),
     };
 
     Ok(html! {
         <div class="
-            m-0
-            overflow-y-scroll overflow-x-hidden
+            mx-0 px-6 space-x-4
+            overflow-x-scroll overflow-y-hidden
+            flex 
         ">
             <FrontCoverCard />
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {

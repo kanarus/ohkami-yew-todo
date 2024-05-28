@@ -72,10 +72,10 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
             })}
             toolbox={html!(
                 <UploadButton
-                    on_click={(!input.is_empty()).then_some(Callback::from({
+                    on_click={(!input.is_empty()).then_some({
                         let (input, handler) = (input.clone(), props.handler.clone());
-                        move |_| handler.on_initial_input.emit(input.clone())
-                    }))}
+                        handler.on_initial_input.reform(move |_| input.clone())
+                    })}
                 />
             )}
             contents={html!(
@@ -101,7 +101,7 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
 pub fn FrontCoverCard() -> Html {
     html!(
         <CardLayout
-            title={String::from("Ohkami*Yew TODO Demo")}
+            title={String::from("Note")}
             toolbox={/* empty */}
             contents={html!(
                 <ul class="m-0">
