@@ -26,7 +26,7 @@ pub fn TodoCard(props: &TodoCardProps) -> Html {
         <CardLayout
             title={props.bind.title.clone()}
             on_edit_title={props.handler.on_edit_title.clone()}
-            on_blur={props.handler.on_request_save.clone()}
+            on_focusout={props.handler.on_request_save.clone()}
             toolbox={html!(
                 <DeleteButton
                     on_click={props.handler.on_click_delete.clone()}

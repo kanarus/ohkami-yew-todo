@@ -14,7 +14,7 @@ use std::rc::Rc;
 pub fn App() -> Html {
     html! (
         <main class="h-full flex flex-col">
-            <header class="basis-12">
+            <header class="basis-12 mt-12">
                 <h1 class="m-0 w-full h-12 text-center text-neutral-800 underline underline-offset-8">
                     {"Ohkami×Yew TODO Demo"}
                 </h1>

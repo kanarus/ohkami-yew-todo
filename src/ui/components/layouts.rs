@@ -12,7 +12,7 @@ pub struct CardLayoutProps {
     #[prop_or(None)]
     pub on_edit_title: Option<Callback<String>>,
     #[prop_or(None)]
-    pub on_blur:       Option<Callback<()>>,
+    pub on_focusout:   Option<Callback<()>>,
 }
 
 #[function_component]
@@ -27,7 +27,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                 px-4 py-2 m-0
                 h-96 w-72 min-w-72
             "
-            onfocusout={props.on_blur.as_ref().map(|h| h.reform(|_| ()))}
+            onfocusout={props.on_focusout.as_ref().map(|h| h.reform(|_| ()))}
         >
             <header
                 class="h-8 space-x-2 flex items-center"
