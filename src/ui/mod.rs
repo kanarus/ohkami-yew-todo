@@ -14,8 +14,8 @@ use std::rc::Rc;
 pub fn App() -> Html {
     html! (
         <main class="h-screen flex flex-col">
-            <header class="basis-20">
-                <h1 class="mb-0 mx-0 w-full text-center text-neutral-800 underline underline-offset-8">
+            <header class="basis-0">
+                <h1 class="mt-12 mb-0 mx-0 w-full text-center text-neutral-800 underline underline-offset-8">
                     {"Ohkami*Yew TODO Demo"}
                 </h1>
             </header>
@@ -165,7 +165,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
 
     Ok(html! {
         <div class="
-            mx-0 px-6 space-x-4
+            m-0 px-6 space-x-4
             overflow-x-scroll overflow-y-hidden
             flex relative
         ">
