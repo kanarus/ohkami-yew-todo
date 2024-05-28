@@ -12,7 +12,7 @@ pub struct CardLayoutProps {
     #[prop_or(None)]
     pub on_edit_title: Option<Callback<String>>,
     #[prop_or(None)]
-    pub on_focusout:   Option<Callback<()>>,
+    pub on_focusout:       Option<Callback<()>>,
 }
 
 #[function_component]
@@ -32,7 +32,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
             <header
                 class="h-8 space-x-2 flex items-center"
             >
-                <TextInput title={true}
+                <TextInput is_title={true}
                     class="grow h-7 w-full h-full"
                     value={props.title.clone()}
                     on_input={props.on_edit_title.clone()}

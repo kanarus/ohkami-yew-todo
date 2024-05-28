@@ -18,8 +18,9 @@ fn Button(props: &ButtonProps) -> Html {
         <div class={props.class}>
             <div class={props.on_click.is_some().then_some("cursor-pointer")}>
                 <a
-                    onclick={props.on_click.as_ref().map(|h| h.reform(|_| ()))}
+                    tabindex="0"
                     class={props.on_click.is_none().then_some("pointer-events-none")}
+                    onclick={props.on_click.as_ref().map(|h| h.reform(|_| ()))}
                 >
                     {props.children.clone()}
                 </a>
@@ -90,20 +91,20 @@ pub struct TextInputProps {
     pub value:    String,
 
     #[prop_or(false)]
-    pub title: bool,
+    pub is_title: bool,
     #[prop_or("")]
     pub class: &'static str,
-
     #[prop_or(None)]
     pub on_input: Option<Callback<String>>,
-    #[prop_or(None)]
-    pub on_blur:  Option<Callback<()>>,
 }
 
 #[function_component]
-pub fn TextInput(props: &TextInputProps) -> Html {
-    let TextInputProps { value, title, class, on_input, on_blur } = props;
-
+pub fn TextInput(TextInputProps {
+    value,
+    class,
+    is_title,
+    on_input,
+}: &TextInputProps) -> Html {
     let on_edit = on_input.clone().unwrap_or_else(Callback::noop).reform(|e: InputEvent| {
         use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
         e.target().unwrap().dyn_into::<HtmlInputElement>().unwrap().value()
@@ -112,17 +113,16 @@ pub fn TextInput(props: &TextInputProps) -> Html {
     html!(
         <div class={*class}>
             <input
-                class={if *title {
-                    "text-lg   | text-neutral-800 resize-none border-none w-full h-full outline-none bg-inherit"
-                } else {
-                    "text-base | text-neutral-800 resize-none border-none w-full h-full outline-none bg-inherit"
+                class={match (*is_title, on_input.is_none()) {
+                    (true,  _    ) => "text-lg   + text-neutral-800 + resize-none border-none w-full h-full outline-none bg-inherit",
+                    (false, true ) => "text-base + text-neutral-400 + resize-none border-none w-full h-full outline-none bg-inherit",
+                    (false, false) => "text-base + text-neutral-800 + resize-none border-none w-full h-full outline-none bg-inherit",
                 }}
                 autocomplete="off"
                 spellcheck="false"
                 disabled={on_input.is_none()}
                 value={value.clone()}
                 oninput={on_edit}
-                onblur={on_blur.as_ref().map(|h| h.reform(|_| ()))}
             />
         </div>
     )
