@@ -15,7 +15,7 @@ pub fn App() -> Html {
     html! (
         <main class="h-screen flex flex-col">
             <header class="basis-0">
-                <h1 class="mt-12 mb-0 mx-0 w-full text-center text-neutral-800 underline underline-offset-8">
+                <h1 class="mt-12 mb-0 mx-0 w-full h-6 text-center text-neutral-800 underline underline-offset-8">
                     {"Ohkami*Yew TODO Demo"}
                 </h1>
             </header>
