@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use super::atoms::DeleteButton;
+use super::atoms::{DeleteButton, UploadButton};
 use super::layouts::{CardLayout, TodoLayout};
 use crate::models::{Card, CreateCardRequest, Todo};
 
@@ -24,6 +24,7 @@ pub struct TodoCardHandler {
 pub fn TodoCard(props: &TodoCardProps) -> Html {
     html!(
         <CardLayout
+            class="todo-card"
             title={props.bind.title.clone()}
             on_edit_title={props.handler.on_edit_title.clone()}
             on_blur={props.handler.on_request_save.clone()}
@@ -58,13 +59,6 @@ pub struct PlaceholderCardHandler {
 pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
     let input = use_state(CreateCardRequest::empty);
 
-    use_effect_with(input.clone(), {
-        let handler = props.handler.clone();
-        move |input| if !input.is_empty() {
-            handler.on_initial_input.emit(input.clone())
-        }
-    });
-
     html!(
         <CardLayout
             title={input.title.clone()}
@@ -77,8 +71,11 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
                 })
             })}
             toolbox={html!(
-                <DeleteButton
-                    disabled={true}
+                <UploadButton
+                    on_click={(!input.is_empty()).then_some(Callback::from({
+                        let (input, handler) = (input.clone(), props.handler.clone());
+                        move |_| handler.on_initial_input.emit(input.clone())
+                    }))}
                 />
             )}
             contents={html!(
@@ -104,7 +101,7 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
 pub fn FrontCoverCard() -> Html {
     html!(
         <CardLayout
-            title={String::from("Note")}
+            title={String::from("Ohkami*Yew TODO Demo")}
             toolbox={/* empty */}
             contents={html!(
                 <ul class="m-0">

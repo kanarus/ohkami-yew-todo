@@ -142,8 +142,8 @@ pub async fn update_card(id: &str,
             .bind(&[id.into()])?.all().await?.results::<Record>()?
     };
     
-    b.DB.batch({
-        let mut updates = Vec::with_capacity(1);
+    let updates = {
+        let mut updates = Vec::new();
 
         if current_title != req.title {
             updates.push(
@@ -169,7 +169,10 @@ pub async fn update_card(id: &str,
         }
 
         updates
-    }).await?;
+    };
+    if !updates.is_empty() {
+        b.DB.batch(updates).await?;
+    }
 
     Ok(())
 }
