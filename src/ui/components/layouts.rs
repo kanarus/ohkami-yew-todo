@@ -24,7 +24,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                 rounded-lg rounded-tr-none
                 border border-solid border-neutral-300
                 shadow-lg shadow-neutral-300
-                px-4 py-2 my-4
+                px-4 py-2 m-0
                 h-96 w-72 min-w-72
             "
             onfocusout={props.on_blur.as_ref().map(|h| h.reform(|_| ()))}

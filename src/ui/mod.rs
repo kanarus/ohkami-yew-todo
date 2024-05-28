@@ -15,8 +15,8 @@ pub fn App() -> Html {
     html! (
         <main class="h-full flex flex-col">
             <header class="basis-12">
-                <h1 class="mt-0 mb-0 mx-0 w-full text-center text-neutral-800 underline underline-offset-8">
-                    {"Ohkami*Yew TODO Demo"}
+                <h1 class="m-0 w-full h-12 text-center text-neutral-800 underline underline-offset-8">
+                    {"Ohkami×Yew TODO Demo"}
                 </h1>
             </header>
             <div class="grow flex items-center">
@@ -167,7 +167,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         <div class="
             m-0 px-6 space-x-4
             overflow-x-scroll overflow-y-hidden
-            flex relative
+            flex
         ">
             <FrontCoverCard />
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html! {
