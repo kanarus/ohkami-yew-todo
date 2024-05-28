@@ -73,7 +73,9 @@ pub async fn list_cards(
 
     let mut todo_records = if card_records.is_empty() {vec![]} else {
         #[derive(Deserialize)] struct Record {
-            card_id:      String,
+            #[allow(unused)/* for debug */]
+            card_id: String,
+
             content:      String,
             completed_at: Option<u64>,
         }
