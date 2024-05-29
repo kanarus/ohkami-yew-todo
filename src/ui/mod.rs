@@ -152,9 +152,6 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
                             cards});
                         }
                         Err(_) => {
-                            cards.set({let mut cards = (&*cards).clone();
-                                let _ = cards.pop();
-                            cards});
                             web_sys::window().unwrap().alert_with_message("Failed to create TODO card").unwrap();
                         }
                     }
