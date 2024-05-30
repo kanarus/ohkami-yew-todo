@@ -65,8 +65,10 @@ pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
     html!(
         <div onkeydown={(!input.is_empty()).then_some({
             let (input, handler) = (input.clone(), props.handler.clone());
-            move |e: KeyboardEvent| if e.ctrl_key() && e.key() == "Enter" {
-                handler.on_request_create.emit(input.clone())
+            move |e: KeyboardEvent| if !(e.is_composing() || e.key_code() == 229) {
+                if (e.ctrl_key() || e.meta_key()) && e.key() == "Enter" {
+                    handler.on_request_create.emit(input.clone())
+                }
             }
         })}>
             <CardLayout
