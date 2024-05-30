@@ -71,11 +71,15 @@ pub struct CheckBoxButtonProps {
 }
 
 #[function_component]
-pub fn CheckBoxButton(props: &CheckBoxButtonProps) -> Html {
+pub fn CheckBoxButton(CheckBoxButtonProps {
+    checked,
+    class,
+    on_click,
+}: &CheckBoxButtonProps) -> Html {
     html! (
-        <Button on_click={props.on_click.clone()} class={props.class}>
+        <Button {on_click} class={class}>
             <img src={
-                if props.checked {
+                if *checked {
                     "assets/icons/check_box.svg"
                 } else {
                     "assets/icons/check_box_outline_blank.svg"
@@ -95,7 +99,9 @@ pub struct TextInputProps {
     #[prop_or("")]
     pub class: &'static str,
     #[prop_or(None)]
-    pub on_input: Option<Callback<String>>,
+    pub on_change: Option<Callback<String>>,
+    #[prop_or(None)]
+    pub on_input:  Option<Callback<String>>,
 }
 
 #[function_component]
@@ -103,26 +109,31 @@ pub fn TextInput(TextInputProps {
     value,
     class,
     is_title,
+    on_change,
     on_input,
 }: &TextInputProps) -> Html {
-    let on_edit = on_input.clone().unwrap_or_else(Callback::noop).reform(|e: InputEvent| {
-        use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
-        e.target().unwrap().dyn_into::<HtmlInputElement>().unwrap().value()
-    });
+    use web_sys::{HtmlInputElement, wasm_bindgen::JsCast};
+
+    let disabled = on_change.is_none() && on_input.is_none();
 
     html!(
         <div class={*class}>
             <input
-                class={match (*is_title, on_input.is_none()) {
+                class={match (*is_title, disabled) {
                     (true,  _    ) => "text-lg   + text-neutral-800 + resize-none border-none w-full h-full outline-none bg-inherit",
                     (false, true ) => "text-base + text-neutral-400 + resize-none border-none w-full h-full outline-none bg-inherit",
                     (false, false) => "text-base + text-neutral-800 + resize-none border-none w-full h-full outline-none bg-inherit",
                 }}
                 autocomplete="off"
                 spellcheck="false"
-                disabled={on_input.is_none()}
+                disabled={disabled}
                 value={value.clone()}
-                oninput={on_edit}
+                onchange={on_change.as_ref().map(|h| h.reform(|e: Event| {
+                    e.target().unwrap().dyn_into::<HtmlInputElement>().unwrap().value()
+                }))}
+                oninput={on_input.as_ref().map(|h| h.reform(|e: InputEvent| {
+                    e.target().unwrap().dyn_into::<HtmlInputElement>().unwrap().value()
+                }))}
             />
         </div>
     )
