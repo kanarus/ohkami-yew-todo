@@ -73,14 +73,11 @@ pub async fn list_cards(
 
     let mut todo_records = if card_records.is_empty() {vec![]} else {
         #[derive(Deserialize)] struct Record {
-            #[allow(unused)/* for debug */]
-            card_id: String,
-
             content:      String,
             completed_at: Option<u64>,
         }
         b.DB.prepare(format!(
-                "SELECT card_id, content, completed_at FROM todos
+                "SELECT content, completed_at FROM todos
                 WHERE card_id IN ({})
                 ORDER BY id DESC", /*
                     This automatically order by card index in `card_records` DESC
@@ -96,24 +93,16 @@ pub async fn list_cards(
             .all().await?.results::<Record>()?
     };
 
-    Ok(card_records.into_iter().map(|r| {
-        let todos = array::from_fn(|_| {
+    Ok(card_records.into_iter().map(|r| Card {
+        id:    r.id,
+        title: r.title,
+        todos: array::from_fn(|_| {
             let next_todo = todo_records.pop().unwrap();
-
-            #[cfg(debug_assertions)]
-            assert_eq!(next_todo.card_id, r.id, "Popped TODO has unexpected card_id");
-
             Todo {
                 content:   next_todo.content,
                 completed: next_todo.completed_at.is_some()
             }
-        });
-
-        Card {
-            id:    r.id,
-            title: r.title,
-            todos
-        }
+        })
     }).collect())
 }
 
