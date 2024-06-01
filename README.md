@@ -1,9 +1,11 @@
-# Cloudflare Workers template
+# Ohkami×Yew TODO Demo
 
 ## Prerequisites
 
-- Rust toolchain of latest version with `wasm32-unknown-unknown` target
+- Latest Rust toolchain with `wasm32-unknown-unknown` target
 - npm
+- `trunk` CLI ( installable by `cargo install trunk` )
+- `tailwindcss` CLI ( see https://tailwindcss.com/blog/standalone-cli )
 
 In addition, `wasm-opt` is recommended to be installed.
 
@@ -15,8 +17,16 @@ npm create cloudflare ./path/to/project-dir -- --template https://github.com/kan
 ```sh
 cd ./path/to/project-dir
 ```
+```sh
+npx wrangler login
+```
+```sh
+npx wrangler d1 create ohkami-yew-todo-db
 
-and if you push the project to your GitHub repo, **You should add `wrangler.toml` into .gitignore**！
+# and edit your wrangler.toml as wrangler.toml.sample
+```
+
+If you push the project to your GitHub repo, **You should add `wrangler.toml` into .gitignore**！
 
 ## Local dev
 
@@ -25,9 +35,7 @@ npm run dev
 ```
 
 ## Publish
-```sh
-npx wrangler login
-```
+
 ```sh
 npm run deploy
 ```
