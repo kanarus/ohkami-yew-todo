@@ -16,10 +16,11 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
         <div
             class="
                 bg-neutral-100
-                rounded-lg rounded-tr-none
+                rounded-xl rounded-tr-none
                 border border-solid border-neutral-300
                 shadow-lg shadow-neutral-300
-                p-4 w-72 min-w-72
+                w-72 min-w-72
+                p-4
             "
         >
             <header class="h-7 space-x-2 flex items-center">
@@ -30,7 +31,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                     {props.toolbox.clone()}
                 </div>
             </header>
-
+                
             <hr class="border-neutral-400 my-4" />
 
             {props.contents.clone()}

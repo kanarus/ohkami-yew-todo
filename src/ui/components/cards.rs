@@ -1,9 +1,7 @@
 use yew::prelude::*;
-use super::atoms::{TextInput, DeleteButton, UploadButton};
+use super::atoms::{TextInput, DeleteButton};
 use super::layouts::{CardLayout, TodoLayout};
-use super::super::utils::set_state;
-use crate::models::{Card, CreateCardRequest, Todo};
-
+use crate::models::Card;
 
 
 #[derive(Properties, PartialEq)]
@@ -48,64 +46,6 @@ pub fn TodoCard(props: &TodoCardProps) -> Html {
 }
 
 
-#[derive(Properties, PartialEq)]
-pub struct PlaceholderCardProps {
-    pub handler: PlaceholderCardHandler,
-}
-
-#[derive(PartialEq, Clone)]
-pub struct PlaceholderCardHandler {
-    pub on_request_create: Callback<UseStateHandle<CreateCardRequest>>,
-}
-
-#[function_component]
-pub fn PlaceholderCard(props: &PlaceholderCardProps) -> Html {
-    let input = use_state(CreateCardRequest::empty);
-
-    html!(
-        <div onkeydown={(!input.is_empty()).then_some({
-            let (input, handler) = (input.clone(), props.handler.clone());
-            move |e: KeyboardEvent| if !(e.is_composing() || e.key_code() == 229) {
-                if (e.ctrl_key() || e.meta_key()) && e.key() == "Enter" {
-                    handler.on_request_create.emit(input.clone())
-                }
-            }
-        })}>
-            <CardLayout
-                title={html!(
-                    <TextInput
-                        is_title={true}
-                        value={input.title.clone()}
-                        on_input={Callback::from({
-                            let input = input.clone();
-                            move |value| set_state(&input, |ip| ip.title = value)
-                        })}
-                    />
-                )}
-                toolbox={html!(
-                    <UploadButton
-                        on_click={(!input.is_empty()).then_some({
-                            let (input, handler) = (input.clone(), props.handler.clone());
-                            handler.on_request_create.reform(move |_| input.clone())
-                        })}
-                    />
-                )}
-                contents={html!(
-                    <TodoLayout
-                        checkable={false}
-                        todos={input.todos.clone().map(|content| Todo { content, completed: false })}
-                        on_edit_todo={std::array::from_fn(|i| Callback::from({
-                            let input = input.clone();
-                            move |value| set_state(&input, |ip| ip.todos[i] = value)
-                        }))}
-                    />
-                )}
-            />
-        </div>
-    )
-}
-
-
 #[function_component]
 pub fn FrontCoverCard() -> Html {
     html!(
@@ -134,5 +74,32 @@ pub fn FrontCoverCard() -> Html {
                 </ul>
             )}
         />
+    )
+}
+
+
+#[derive(Properties, PartialEq)]
+pub struct PlusCardProps {
+    pub on_click: Callback<()>,
+}
+
+#[function_component]
+pub fn PlusCard(props: &PlusCardProps) -> Html {
+    html!(
+        <div
+            class="
+                bg-slate-100
+                cursor-pointer
+                rounded-xl rounded-tr-none
+                w-72 min-w-72
+                flex
+            "
+            onclick={props.on_click.reform(|_| ())}
+        >
+            <p class="
+                m-auto
+                text-2xl text-neutral-800
+            ">{"＋"}</p>
+        </div>
     )
 }

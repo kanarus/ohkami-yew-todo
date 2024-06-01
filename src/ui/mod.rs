@@ -4,7 +4,7 @@ mod components;
 
 use fetch::Client;
 use utils::{set_state, report_error};
-use components::{TodoCard, TodoCardHandler, PlaceholderCard, PlaceholderCardHandler, FrontCoverCard};
+use components::{TodoCard, TodoCardHandler, FrontCoverCard, PlusCard};
 
 use crate::models::{Card, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
 use yew::prelude::*;
@@ -164,48 +164,43 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         })),
     });
 
-    let placeholder_handler = PlaceholderCardHandler {
-        on_request_create: Callback::from({
+    let handle_click_plus = Callback::from({
+        let (client, cards) = (client.clone(), cards.clone());
+        move |_| wasm_bindgen_futures::spawn_local({
             let (client, cards) = (client.clone(), cards.clone());
-            move |input: UseStateHandle<CreateCardRequest>| wasm_bindgen_futures::spawn_local({
-                let (client, cards) = (client.clone(), cards.clone());
 
-                const EPHEMERAL_ID: String = String::new();
+            set_state(&cards, |cs| cs.push(Card {
+                id:    String::new(),
+                title: String::new(),
+                todos: std::array::from_fn(|_| Todo {
+                    content:   String::new(),
+                    completed: false,
+                }),
+            }));
 
-                set_state(&input, |i| *i = CreateCardRequest::empty());
-                set_state(&cards, |cs| cs.push(Card {
-                    id:    EPHEMERAL_ID,
-                    title: input.title.clone(),
-                    todos: input.todos.clone().map(|content| Todo {
-                        content,
-                        completed: false,
-                    }),
-                }));
-
-                async move {
-                    match async {Result::<_, fetch::Error>::Ok(client
-                        .POSTwith((&*input).clone(), "/api/cards").await?
-                        .json().await?
-                    )}.await {
-                        Ok(CreateCardResponse { id }) => {
-                            set_state(&cards, |cs| cs.push(Card {
-                                id,
-                                title: input.title.clone(),
-                                todos: input.todos.clone().map(|content| Todo {
-                                    content,
-                                    completed: false,
-                                }),
-                            }))
-                        }
-                        Err(_) => {
-                            report_error("Failed to create TODO card");
-                            set_state(&cards, |_| (/* stay */));
-                        }
+            async move {
+                match async {Result::<_, fetch::Error>::Ok(client
+                    .POSTwith(CreateCardRequest::empty(), "/api/cards").await?
+                    .json().await?
+                )}.await {
+                    Ok(CreateCardResponse { id }) => {
+                        set_state(&cards, |cs| cs.push(Card {
+                            id,
+                            title: String::new(),
+                            todos: std::array::from_fn(|_| Todo {
+                                content:   String::new(),
+                                completed: false,
+                            }),
+                        }))
+                    }
+                    Err(_) => {
+                        report_error("Failed to create TODO card");
+                        set_state(&cards, |_| (/* stay */));
                     }
                 }
-            })
-        }),
-    };
+            }
+        })
+    });
 
     Ok(html! {
         <div class="
@@ -217,7 +212,7 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
             {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html!(
                 <TodoCard bind={card} handler={handler} />
             ))}
-            <PlaceholderCard handler={placeholder_handler} />
+            <PlusCard on_click={handle_click_plus} />
         </div>
     })
 }
