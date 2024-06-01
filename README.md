@@ -33,6 +33,9 @@ If you push the project to your GitHub repo, **You should add `wrangler.toml` in
 ```sh
 npm run dev
 ```
+```sh
+trunk serve --watch src/ui --open
+```
 
 ## Publish
 

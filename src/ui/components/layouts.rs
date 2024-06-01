@@ -19,7 +19,7 @@ pub fn CardLayout(props: &CardLayoutProps) -> Html {
                 rounded-xl rounded-tr-none
                 border border-solid border-neutral-300
                 shadow-lg shadow-neutral-300
-                w-72 min-w-72
+                w-72 min-w-72 h-[374px]
                 p-4
             "
         >
