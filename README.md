@@ -25,6 +25,11 @@ npx wrangler d1 create ohkami-yew-todo-db
 
 # and edit your wrangler.toml as wrangler.toml.sample
 ```
+```sh
+npx wrangler d1 execute ohkami-yew-todo-db --file ./schema.sql
+
+npx wrangler d1 execute ohkami-yew-todo-db --file ./schema.sql --remote
+```
 
 If you push the project to your GitHub repo, **You should add `wrangler.toml` into .gitignore**！
 
