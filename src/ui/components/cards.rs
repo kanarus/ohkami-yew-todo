@@ -6,12 +6,8 @@ use crate::models::Card;
 
 #[derive(Properties, PartialEq)]
 pub struct TodoCardProps {
-    pub bind:    Card,
-    pub handler: TodoCardHandler,
-}
+    pub bind: Card,
 
-#[derive(PartialEq)]
-pub struct TodoCardHandler {
     pub on_click_delete:  Callback<()>,
     pub on_edit_title:    Callback<String>,
     pub on_check_todo_by: [Callback<()>; Card::N_TODOS],
@@ -26,19 +22,19 @@ pub fn TodoCard(props: &TodoCardProps) -> Html {
                 <TextInput
                     is_title={true}
                     value={props.bind.title.clone()}
-                    on_change={props.handler.on_edit_title.clone()}
+                    on_change={props.on_edit_title.clone()}
                 />
             )}
             toolbox={html!(
                 <DeleteButton
-                    on_click={props.handler.on_click_delete.clone()}
+                    on_click={props.on_click_delete.clone()}
                 />
             )}
             contents={html!(
                 <TodoLayout
                     todos={props.bind.todos.clone()}
-                    on_check_todo={props.handler.on_check_todo_by.clone()}
-                    on_edit_todo={props.handler.on_edit_todo_by.clone()}
+                    on_check_todo={props.on_check_todo_by.clone()}
+                    on_edit_todo={props.on_edit_todo_by.clone()}
                 />
             )}
         />
@@ -96,10 +92,9 @@ pub fn PlusCard(props: &PlusCardProps) -> Html {
             "
             onclick={props.on_click.reform(|_| ())}
         >
-            <p class="
-                m-auto
-                text-2xl text-neutral-800
-            ">{"＋"}</p>
+            <p class="m-auto text-2xl text-neutral-800">
+                {"＋"}
+            </p>
         </div>
     )
 }

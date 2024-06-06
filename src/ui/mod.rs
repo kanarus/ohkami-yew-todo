@@ -4,7 +4,7 @@ mod components;
 
 use fetch::Client;
 use utils::{set_state, report_error};
-use components::{TodoCard, TodoCardHandler, FrontCoverCard, PlusCard};
+use components::{FrontCoverCard, PlusCard, TodoCard, TodoCardProps};
 
 use crate::models::{Card, CreateCardRequest, CreateCardResponse, Todo, UpdateCard};
 use yew::prelude::*;
@@ -75,7 +75,9 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
         report_error("Failed to fetch your TODOs");
     }
 
-    let todo_handlers = (0..cards.len()).map(|i| TodoCardHandler {
+    let todo_props = cards.iter().cloned().enumerate().map(|(i, bind)| TodoCardProps {
+        bind,
+
         on_click_delete: Callback::from({
             let (client, cards) = (client.clone(), cards.clone());
             move |_| wasm_bindgen_futures::spawn_local({
@@ -203,14 +205,15 @@ fn TodoCardList(TodoCardListProps { client }: &TodoCardListProps) -> HtmlResult 
     });
 
     Ok(html! {
-        <div class="
-            m-0 px-6 space-x-4
-            overflow-x-scroll overflow-y-hidden
-            flex
-        ">
+        <div class="m-0 px-6 space-x-4 overflow-x-scroll overflow-y-hidden flex">
             <FrontCoverCard />
-            {for cards.iter().cloned().zip(todo_handlers).map(|(card, handler)| html!(
-                <TodoCard bind={card} handler={handler} />
+            {for todo_props.map(|p| html!(
+                <TodoCard bind={p.bind}
+                    on_click_delete={p.on_click_delete}
+                    on_edit_title={p.on_edit_title}
+                    on_check_todo_by={p.on_check_todo_by}
+                    on_edit_todo_by={p.on_edit_todo_by}
+                />
             ))}
             <PlusCard on_click={handle_click_plus} />
         </div>
