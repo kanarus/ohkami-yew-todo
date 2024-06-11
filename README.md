@@ -12,10 +12,9 @@ In addition, `wasm-opt` is recommended to be installed.
 ## Setup
 
 ```sh
-npm create cloudflare ./path/to/project-dir -- --template https://github.com/kana-rus/ohkami-templates/worker
-```
-```sh
-cd ./path/to/project-dir
+git clone https://github.com/kana-rus/ohkami-yew-todo.git
+
+cd ./ohkami-yew-todo
 ```
 ```sh
 npx wrangler login
