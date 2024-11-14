@@ -1,6 +1,6 @@
 use super::Bindings;
 use ohkami::serde::{Serialize, Deserialize};
-use ohkami::builtin::{fang::JWT, item::JWTToken};
+use ohkami::fang::{JWT, JWTToken};
 use ohkami::utils::unix_timestamp;
 
 
@@ -11,7 +11,7 @@ pub struct JWTPayload {
 }
 
 pub fn fang() -> JWT<JWTPayload> {
-    JWT::default(Bindings::JWT_SECRET_KEY())
+    JWT::default(Bindings::JWT_SECRET_KEY)
 }
 
 pub fn new_token_for(user_id: String) -> JWTToken {

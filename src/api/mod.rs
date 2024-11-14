@@ -11,13 +11,14 @@ use ohkami::typed::status;
 use ohkami::serde::Deserialize;
 use ohkami::utils::unix_timestamp;
 use ohkami::Memory;
+use ohkami::format::JSON;
 use std::array;
 
 
 #[worker::send]
 pub async fn signup(
     b: Bindings,
-) -> Result<SignupResponse, ServerError> {
+) -> Result<JSON<SignupResponse>, ServerError> {
     let user_id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
         .crypto().unwrap().random_uuid();
 
@@ -25,17 +26,17 @@ pub async fn signup(
         .bind(&[(&user_id).into()])?
         .run().await?;
 
-    Ok(SignupResponse {
+    Ok(JSON(SignupResponse {
         token: jwt::new_token_for(user_id)
-    })
+    }))
 }
 
 #[worker::send]
 pub async fn create_card(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-    req:  CreateCardRequest
-) -> Result<status::Created<CreateCardResponse>, ServerError> {
+    JSON(req): JSON<CreateCardRequest>
+) -> Result<status::Created<JSON<CreateCardResponse>>, ServerError> {
     let id = WorkerGlobalScope::unchecked_from_js(js_sys::global().into())
         .crypto().unwrap().random_uuid();
 
@@ -53,14 +54,14 @@ pub async fn create_card(
             ).as_slice())?,
         ]).await?;
 
-    Ok(status::Created(CreateCardResponse { id }))
+    Ok(status::Created(JSON(CreateCardResponse { id })))
 }
 
 #[worker::send]
 pub async fn list_cards(
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-) -> Result<Vec<Card>, ServerError> {
+) -> Result<JSON<Vec<Card>>, ServerError> {
     let card_records = {
         #[derive(Deserialize)] struct Record {
             id:    String,
@@ -93,7 +94,7 @@ pub async fn list_cards(
             .all().await?.results::<Record>()?
     };
 
-    Ok(card_records.into_iter().map(|r| Card {
+    Ok(JSON(card_records.into_iter().map(|r| Card {
         id:    r.id,
         title: r.title,
         todos: array::from_fn(|_| {
@@ -103,14 +104,14 @@ pub async fn list_cards(
                 completed: next_todo.completed_at.is_some()
             }
         })
-    }).collect())
+    }).collect()))
 }
 
 #[worker::send]
 pub async fn update_card(id: &str,
     b:    Bindings,
     auth: Memory<'_, JWTPayload>,
-    req:  UpdateCard,
+    JSON(req): JSON<UpdateCard>,
 ) -> Result<(), ServerError> {
     b.assert_user_is_owner_of_card(&auth.user_id, id).await?;
 

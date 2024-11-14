@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Latest Rust toolchain with `wasm32-unknown-unknown` target
-- npm
-- `trunk` CLI ( installable by `cargo install trunk` )
+- Rust toolchain of channel `1.81` with `wasm32-unknown-unknown` target
+- [`worker-build`](https://crates.io/crates/worker-build) ( run `cargo install worker-build` to install )
+- `trunk` CLI ( run `cargo install trunk` to install )
 - `tailwindcss` CLI ( see https://tailwindcss.com/blog/standalone-cli )
 
 In addition, `wasm-opt` is recommended to be installed.

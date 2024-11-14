@@ -1,11 +1,10 @@
 use ohkami::serde::{Deserialize, Serialize};
-use ohkami::typed::Payload;
-use ohkami::builtin::{payload::JSON, item::JWTToken};
+use ohkami::fang::JWTToken;
 
 
 pub type ID = String;
 
-#[Payload(JSON/SD)]
+#[derive(Serialize, Deserialize)]
 #[derive(PartialEq, Clone)]
 pub struct Card {
     pub id:    ID,
@@ -22,12 +21,12 @@ pub struct Todo {
     pub completed: bool,
 }
 
-#[Payload(JSON/SD)]
+#[derive(Serialize, Deserialize)]
 pub struct SignupResponse {
     pub token: JWTToken,
 }
 
-#[Payload(JSON/SD)]
+#[derive(Serialize, Deserialize)]
 #[derive(PartialEq, Clone)]
 pub struct CreateCardRequest {
     pub title: String,
@@ -47,12 +46,12 @@ impl CreateCardRequest {
     }
 }
 
-#[Payload(JSON/SD)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateCardResponse {
     pub id: String,
 }
 
-#[Payload(JSON/SD)]
+#[derive(Serialize, Deserialize)]
 pub struct UpdateCard {
     pub title: String,
     pub todos: [Todo; Card::N_TODOS],
